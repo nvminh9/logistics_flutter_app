@@ -110,7 +110,7 @@ class OrderStatusCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.maritimeBlue,
+                            color: AppColors.maritimeDarkBlue,
                           ),
                         ),
                         const Text(
@@ -240,7 +240,8 @@ class OrderStatusCard extends StatelessWidget {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
+                        // gradient: AppColors.primaryGradient,
+                        color: AppColors.maritimeBlue,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(

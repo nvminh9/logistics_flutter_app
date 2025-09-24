@@ -1,6 +1,7 @@
 import 'package:provider/provider.dart';
 import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
 import 'package:nalogistics_app/presentation/controllers/order_controller.dart';
+import 'package:nalogistics_app/presentation/controllers/order_detail_controller.dart';
 
 class DependencyInjection {
   static List<ChangeNotifierProvider> providers = [
@@ -9,6 +10,9 @@ class DependencyInjection {
     ),
     ChangeNotifierProvider<OrderController>(
       create: (_) => OrderController(),
+    ),
+    ChangeNotifierProvider<OrderDetailController>(
+      create: (_) => OrderDetailController(),
     ),
     // Các providers khác có thể thêm vào đây ...
   ];

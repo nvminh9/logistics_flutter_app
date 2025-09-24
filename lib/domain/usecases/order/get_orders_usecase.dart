@@ -8,7 +8,7 @@ class GetOrdersUseCase {
   GetOrdersUseCase(this._orderRepository);
 
   Future<List<OrderApiModel>> execute({
-    OrderStatus? filterStatus,
+    OrderStatus? filterStatus, // null = lấy tất cả
     String order = 'desc',
     String sortBy = 'id',
     int pageSize = 13,
@@ -26,14 +26,15 @@ class GetOrdersUseCase {
         throw Exception(response.message);
       }
 
-      // Filter by status if specified
-      if (filterStatus != null) {
-        return response.data
-            .where((order) => order.status == filterStatus.value)
-            .toList();
+      // Nếu filterStatus là null, trả về tất cả orders
+      if (filterStatus == null) {
+        return response.data;
       }
 
-      return response.data;
+      // Nếu có filterStatus, lọc theo status
+      return response.data
+          .where((order) => order.status == filterStatus.value)
+          .toList();
     } catch (e) {
       print('❌ GetOrdersUseCase Error: $e');
       rethrow;

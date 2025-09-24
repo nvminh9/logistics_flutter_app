@@ -89,7 +89,7 @@ class _ApiLoginPageState extends State<ApiLoginPage> with TickerProviderStateMix
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.check_circle, color: Colors.white),
+              // const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -145,7 +145,7 @@ class _ApiLoginPageState extends State<ApiLoginPage> with TickerProviderStateMix
                               maxHeight: screenHeight > 700 ? 350 : 250,
                             ),
                             decoration: const BoxDecoration(
-                              gradient: AppColors.oceanGradient,
+                              gradient: AppColors.primaryGradient,
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -207,7 +207,7 @@ class _ApiLoginPageState extends State<ApiLoginPage> with TickerProviderStateMix
                                 ),
                                 SizedBox(height: screenHeight > 700 ? 8 : 4),
                                 Text(
-                                  'Driver Portal',
+                                  'Cổng thông tin',
                                   style: TextStyle(
                                     fontSize: screenHeight > 700 ? 16 : 14,
                                     color: Colors.white.withOpacity(0.9),
@@ -251,7 +251,7 @@ class _ApiLoginPageState extends State<ApiLoginPage> with TickerProviderStateMix
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Welcome Back',
+                                      'Xin chào',
                                       style: TextStyle(
                                         fontSize: screenHeight > 700 ? 28 : 24,
                                         fontWeight: FontWeight.bold,
@@ -260,7 +260,7 @@ class _ApiLoginPageState extends State<ApiLoginPage> with TickerProviderStateMix
                                     ),
                                     SizedBox(height: screenHeight > 700 ? 8 : 4),
                                     Text(
-                                      'Sign in to continue your deliveries',
+                                      'Đăng nhập để tiếp tục',
                                       style: TextStyle(
                                         fontSize: screenHeight > 700 ? 16 : 14,
                                         color: AppColors.secondaryText,
@@ -272,7 +272,7 @@ class _ApiLoginPageState extends State<ApiLoginPage> with TickerProviderStateMix
                                     CustomTextField(
                                       controller: _usernameController,
                                       labelText: 'Tên đăng nhập',
-                                      prefixIcon: Icons.person_outline,
+                                      prefixIcon: Icons.badge_outlined,
                                       validator: (value) {
                                         if (value == null || value.trim().isEmpty) {
                                           return 'Vui lòng nhập tên đăng nhập';
@@ -312,6 +312,7 @@ class _ApiLoginPageState extends State<ApiLoginPage> with TickerProviderStateMix
                                               onPressed: authController.isLoading ? null : _handleLogin,
                                               isLoading: authController.isLoading,
                                               isFullWidth: true,
+                                              backgroundColor: AppColors.maritimeBlue,
                                             ),
 
                                             // Error message

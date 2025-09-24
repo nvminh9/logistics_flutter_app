@@ -109,6 +109,51 @@ class ApiClient {
     }
   }
 
+  Future<Map<String, dynamic>> put(
+      String endpoint, {
+        Map<String, String>? queryParams,
+        Map<String, dynamic>? body,
+        bool requiresAuth = true,
+      }) async {
+      try {
+        var uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
+
+        if (queryParams != null && queryParams.isNotEmpty) {
+          uri = uri.replace(queryParameters: queryParams);
+        }
+
+        final headers = await _getHeaders(requiresAuth: requiresAuth);
+
+        print('🚀 API Request: PUT $uri');
+        print('📋 Headers: $headers');
+        print('📦 Body: $body');
+
+        final response = await http
+            .put(
+          uri,
+          headers: headers,
+          body: body != null ? json.encode(body) : null,
+        ).timeout(const Duration(seconds: timeoutDuration));
+
+        print('📨 Response Status: ${response.statusCode}');
+        print('📄 Response Body: ${response.body}');
+
+        return _handleResponse(response);
+      } on SocketException catch (e) {
+        print('❌ Network Error: $e');
+        throw NetworkException('Không có kết nối internet');
+      } on http.ClientException catch (e) {
+        print('❌ Client Error: $e');
+        throw NetworkException('Lỗi kết nối với server');
+      } on FormatException catch (e) {
+        print('❌ Format Error: $e');
+        throw NetworkException('Dữ liệu trả về không hợp lệ');
+      } catch (e) {
+        print('❌ Unknown Error: $e');
+        throw NetworkException('Có lỗi xảy ra: ${e.toString()}');
+      }
+  }
+
   Map<String, dynamic> _handleResponse(http.Response response) {
     try {
       final Map<String, dynamic> data = json.decode(response.body);

@@ -36,11 +36,11 @@ extension OrderStatusExtension on OrderStatus {
   String get shortName {
     switch (this) {
       case OrderStatus.inProgress:
-        return 'Xử lý';
+        return 'Chờ lấy hàng';
       case OrderStatus.pickedUp:
-        return 'Lấy hàng';
+        return 'Đã lấy hàng';
       case OrderStatus.inTransit:
-        return 'Vận chuyển';
+        return 'Đang vận chuyển';
       case OrderStatus.delivered:
         return 'Đã giao';
       case OrderStatus.completed:
@@ -77,6 +77,7 @@ extension OrderStatusExtension on OrderStatus {
     return index; // 0, 1, 2, 3, 4, 5, 6
   }
 
+  // Static method để convert từ int sang OrderStatus
   static OrderStatus fromValue(int value) {
     if (value >= 0 && value < OrderStatus.values.length) {
       return OrderStatus.values[value];

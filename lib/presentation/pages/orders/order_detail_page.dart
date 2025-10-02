@@ -986,12 +986,15 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
         buttonIcon = Icons.location_on;
         break;
       case OrderStatus.delivered:
-        nextStatus = OrderStatus.completed;
-        buttonText = 'Hoàn thành đơn hàng';
-        buttonIcon = Icons.done_all;
+        nextStatus = OrderStatus.delivered;
         break;
       default:
         nextStatus = null;
+    }
+
+    // Nếu đơn hàng đã giao
+    if(nextStatus == OrderStatus.delivered){
+      return Container();
     }
 
     if (nextStatus == null) {

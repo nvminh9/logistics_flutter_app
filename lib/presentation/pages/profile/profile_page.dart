@@ -9,6 +9,7 @@ import 'package:nalogistics_app/core/constants/app_constants.dart';
 import 'package:nalogistics_app/presentation/routes/route_names.dart';
 import 'package:nalogistics_app/presentation/widgets/common/custom_button.dart';
 import 'package:nalogistics_app/presentation/widgets/common/app_bar_widget.dart';
+import 'package:nalogistics_app/presentation/widgets/common/test_token_expiration_button.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -58,6 +59,16 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  // Helper để check debug mode
+  bool _isDebugMode() {
+    bool isDebug = false;
+    assert(() {
+      isDebug = true;
+      return true;
+    }());
+    return isDebug;
   }
 
   Future<void> _loadDriverInfo() async {
@@ -163,6 +174,12 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                 const SizedBox(height: 10),
                 _buildProfileInfo(),
                 const SizedBox(height: 10),
+
+                // ⭐ THÊM TEST SECTION (Only in debug mode)
+                // Remove this in production!
+                if (_isDebugMode()) const TokenExpirationTestSection(),
+                if (_isDebugMode()) const SizedBox(height: 10),
+
                 _buildLogoutButton(),
               ],
             ),

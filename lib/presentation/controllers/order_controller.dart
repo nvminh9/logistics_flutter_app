@@ -9,19 +9,20 @@ class OrderController extends BaseController {
   late final GetOrdersUseCase _getOrdersUseCase;
   late final OrderRepository _orderRepository;
 
+  // ⭐ CHỈ 4 STATUS CẦN HIỂN THị
+  static const List<OrderStatus> activeStatuses = [
+    OrderStatus.inProgress,
+    OrderStatus.pickedUp,
+    OrderStatus.inTransit,
+    OrderStatus.delivered,
+  ];
+
   // Order data by status
   Map<OrderStatus, List<OrderApiModel>> _ordersByStatus = {};
   Map<OrderStatus, bool> _loadingByStatus = {};
   Map<OrderStatus, String?> _errorByStatus = {};
 
-  // Data cho tab "Tất cả"
-  List<OrderApiModel> _allOrders = [];
-  bool _allOrdersLoading = false;
-  String? _allOrdersError;
-  int _allOrdersCurrentPage = 1;
-  bool _allOrdersHasMore = true;
-
-  // Current page tracking for pagination
+  // Pagination tracking
   Map<OrderStatus, int> _currentPageByStatus = {};
   Map<OrderStatus, bool> _hasMoreByStatus = {};
 
@@ -32,12 +33,6 @@ class OrderController extends BaseController {
   Map<OrderStatus, List<OrderApiModel>> get ordersByStatus => _ordersByStatus;
   Map<OrderStatus, bool> get loadingByStatus => _loadingByStatus;
   Map<OrderStatus, String?> get errorByStatus => _errorByStatus;
-
-  // Getters cho tab "Tất cả"
-  List<OrderApiModel> get allOrders => _allOrders;
-  bool get allOrdersLoading => _allOrdersLoading;
-  String? get allOrdersError => _allOrdersError;
-  bool get allOrdersHasMore => _allOrdersHasMore;
   bool get initialDataLoaded => _initialDataLoaded;
 
   OrderController() {
@@ -47,7 +42,8 @@ class OrderController extends BaseController {
   }
 
   void _initializeData() {
-    for (var status in OrderStatus.values) {
+    // ⭐ CHỈ KHỞI TẠO CHO 4 STATUS
+    for (var status in activeStatuses) {
       _ordersByStatus[status] = [];
       _loadingByStatus[status] = false;
       _errorByStatus[status] = null;
@@ -56,62 +52,62 @@ class OrderController extends BaseController {
     }
   }
 
-  // Load initial data cho tất cả tabs
+  // ⭐ LOAD TẤT CẢ 4 TABS NGAY TỪ ĐẦU
   Future<void> loadInitialData() async {
     if (_initialDataLoaded) return;
 
     try {
       setLoading(true);
-      _allOrdersLoading = true;
 
-      // Set loading cho tất cả status
-      for (var status in OrderStatus.values) {
+      // Set loading cho tất cả 4 status
+      for (var status in activeStatuses) {
         _loadingByStatus[status] = true;
       }
       notifyListeners();
 
-      // Gọi API lấy tất cả orders
-      final orders = await _getOrdersUseCase.execute(
+      print('🔄 Loading initial data for all 4 tabs...');
+
+      // Gọi API lấy TẤT CẢ orders (không filter)
+      final allOrders = await _getOrdersUseCase.execute(
         filterStatus: null,
         pageNumber: 1,
-        pageSize: 100, // Lấy nhiều để có data cho các tab
+        pageSize: 100, // Lấy nhiều để có đủ data
       );
 
-      // Lưu tất cả orders
-      _allOrders = orders;
+      print('✅ Received ${allOrders.length} orders from API');
 
-      // Phân loại orders theo status
-      for (var status in OrderStatus.values) {
-        _ordersByStatus[status] = orders
+      // ⭐ PHÂN LOẠI ORDERS CHO 4 TABS
+      for (var status in activeStatuses) {
+        _ordersByStatus[status] = allOrders
             .where((order) => order.status == status.value)
             .toList();
+
+        print('   ${status.shortName}: ${_ordersByStatus[status]!.length} orders');
       }
 
-      // Check xem còn data không
-      if (orders.length < 100) {
-        _allOrdersHasMore = false;
-        for (var status in OrderStatus.values) {
+      // Check xem còn data không (cho pagination sau này)
+      if (allOrders.length < 100) {
+        for (var status in activeStatuses) {
           _hasMoreByStatus[status] = false;
         }
       }
 
       _initialDataLoaded = true;
-      _allOrdersLoading = false;
 
       // Clear loading cho tất cả status
-      for (var status in OrderStatus.values) {
+      for (var status in activeStatuses) {
         _loadingByStatus[status] = false;
       }
 
       setLoading(false);
       notifyListeners();
 
+      print('✅ Initial data loaded successfully for all 4 tabs!');
+
     } catch (e) {
       print('❌ Load Initial Data Error: $e');
-      _allOrdersLoading = false;
-      _allOrdersError = e.toString();
 
-      for (var status in OrderStatus.values) {
+      for (var status in activeStatuses) {
         _loadingByStatus[status] = false;
         _errorByStatus[status] = e.toString();
       }
@@ -122,172 +118,113 @@ class OrderController extends BaseController {
     }
   }
 
-  // Load tất cả đơn hàng (không filter theo status)
-  Future<void> loadAllOrders({bool refresh = false}) async {
+  // Load more orders for specific status (pagination)
+  Future<void> loadMoreOrders(OrderStatus status) async {
+    // Chỉ load more cho 4 status được phép
+    if (!activeStatuses.contains(status)) return;
+
+    if (_loadingByStatus[status] == true) return;
+    if (_hasMoreByStatus[status] == false) return;
+
     try {
-      if (_allOrdersLoading) return;
-
-      if (refresh) {
-        _allOrdersCurrentPage = 1;
-        _allOrdersHasMore = true;
-        _allOrders = [];
-        _initialDataLoaded = false;
-
-        // Reset data cho tất cả status
-        for (var status in OrderStatus.values) {
-          _ordersByStatus[status] = [];
-          _currentPageByStatus[status] = 1;
-          _hasMoreByStatus[status] = true;
-        }
-      }
-
-      _allOrdersLoading = true;
-      _allOrdersError = null;
-      notifyListeners();
-
-      // Gọi API không có filter status để lấy tất cả
-      final orders = await _getOrdersUseCase.execute(
-        filterStatus: null,
-        pageNumber: _allOrdersCurrentPage,
-        pageSize: 13,
-      );
-
-      if (refresh) {
-        _allOrders = orders;
-
-        // Phân loại lại orders theo status
-        for (var status in OrderStatus.values) {
-          _ordersByStatus[status] = orders
-              .where((order) => order.status == status.value)
-              .toList();
-        }
-      } else {
-        _allOrders.addAll(orders);
-
-        // Thêm orders mới vào các status tương ứng
-        for (var order in orders) {
-          final status = OrderStatusExtension.fromValue(order.status);
-          _ordersByStatus[status]?.add(order);
-        }
-      }
-
-      // Check if there are more pages
-      if (orders.length < 13) {
-        _allOrdersHasMore = false;
-      } else {
-        _allOrdersCurrentPage++;
-      }
-
-      _allOrdersLoading = false;
-      notifyListeners();
-
-    } catch (e) {
-      print('❌ Load All Orders Error: $e');
-      _allOrdersLoading = false;
-      _allOrdersError = e.toString();
-      notifyListeners();
-    }
-  }
-
-  Future<void> refreshAllOrders() async {
-    // Reset initial data flag và clear all data
-    _initialDataLoaded = false;
-    await loadAllOrders(refresh: true);
-    _initialDataLoaded = true; // Set lại sau khi refresh xong
-  }
-
-  Future<void> loadMoreAllOrders() async {
-    if (_allOrdersHasMore && !_allOrdersLoading) {
-      await loadAllOrders();
-    }
-  }
-
-  // Load orders by status (existing method - modified)
-  Future<void> loadOrders(OrderStatus status, {bool refresh = false}) async {
-    try {
-      // Nếu đã có initial data và không phải refresh, return
-      if (_initialDataLoaded && !refresh) {
-        return;
-      }
-
-      if (_loadingByStatus[status] == true) return;
-
-      if (refresh) {
-        _currentPageByStatus[status] = 1;
-        _hasMoreByStatus[status] = true;
-        _ordersByStatus[status] = [];
-      }
-
       _loadingByStatus[status] = true;
-      _errorByStatus[status] = null;
       notifyListeners();
 
-      final orders = await _getOrdersUseCase.execute(
+      print('📄 Loading more for ${status.shortName}...');
+
+      final newOrders = await _getOrdersUseCase.execute(
         filterStatus: status,
-        pageNumber: _currentPageByStatus[status]!,
+        pageNumber: _currentPageByStatus[status]! + 1,
         pageSize: 13,
       );
 
-      if (refresh) {
-        _ordersByStatus[status] = orders;
-      } else {
-        _ordersByStatus[status]!.addAll(orders);
-      }
+      _ordersByStatus[status]!.addAll(newOrders);
+      _currentPageByStatus[status] = _currentPageByStatus[status]! + 1;
 
-      // Check if there are more pages
-      if (orders.length < 13) {
+      // Check if has more
+      if (newOrders.length < 13) {
         _hasMoreByStatus[status] = false;
-      } else {
-        _currentPageByStatus[status] = _currentPageByStatus[status]! + 1;
       }
 
       _loadingByStatus[status] = false;
       notifyListeners();
 
     } catch (e) {
-      print('❌ Load Orders Error: $e');
+      print('❌ Load More Error: $e');
       _loadingByStatus[status] = false;
       _errorByStatus[status] = e.toString();
       notifyListeners();
     }
   }
 
+  // Refresh orders for specific status
   Future<void> refreshOrders(OrderStatus status) async {
-    await loadOrders(status, refresh: true);
-  }
+    // Chỉ refresh cho 4 status được phép
+    if (!activeStatuses.contains(status)) return;
 
-  Future<void> loadMoreOrders(OrderStatus status) async {
-    if (_hasMoreByStatus[status] == true && _loadingByStatus[status] == false) {
-      await loadOrders(status);
+    try {
+      _loadingByStatus[status] = true;
+      _errorByStatus[status] = null;
+      notifyListeners();
+
+      print('🔄 Refreshing ${status.shortName}...');
+
+      final orders = await _getOrdersUseCase.execute(
+        filterStatus: status,
+        pageNumber: 1,
+        pageSize: 13,
+      );
+
+      _ordersByStatus[status] = orders;
+      _currentPageByStatus[status] = 1;
+      _hasMoreByStatus[status] = orders.length >= 13;
+
+      _loadingByStatus[status] = false;
+      notifyListeners();
+
+    } catch (e) {
+      print('❌ Refresh Error: $e');
+      _loadingByStatus[status] = false;
+      _errorByStatus[status] = e.toString();
+      notifyListeners();
     }
   }
 
-  bool isLoadingForStatus(OrderStatus status) => _loadingByStatus[status] ?? false;
-  bool hasErrorForStatus(OrderStatus status) => _errorByStatus[status] != null;
-  String? getError(OrderStatus status) => _errorByStatus[status];
-  List<OrderApiModel> getOrders(OrderStatus status) => _ordersByStatus[status] ?? [];
-  bool hasMore(OrderStatus status) => _hasMoreByStatus[status] ?? false;
+  // Refresh tất cả 4 tabs
+  Future<void> refreshAllTabs() async {
+    _initialDataLoaded = false;
+    await loadInitialData();
+  }
+
+  // Getters
+  bool isLoadingForStatus(OrderStatus status) =>
+      _loadingByStatus[status] ?? false;
+
+  bool hasErrorForStatus(OrderStatus status) =>
+      _errorByStatus[status] != null;
+
+  String? getError(OrderStatus status) =>
+      _errorByStatus[status];
+
+  List<OrderApiModel> getOrders(OrderStatus status) =>
+      _ordersByStatus[status] ?? [];
+
+  bool hasMore(OrderStatus status) =>
+      _hasMoreByStatus[status] ?? false;
 
   int getTotalOrdersCount() {
-    // Include all orders in total count
-    return _allOrders.length;
+    return activeStatuses.fold(
+      0,
+          (sum, status) => sum + (_ordersByStatus[status]?.length ?? 0),
+    );
   }
 
   int getOrdersCount(OrderStatus status) {
     return _ordersByStatus[status]?.length ?? 0;
   }
 
-  int getAllOrdersCount() {
-    return _allOrders.length;
-  }
-
   void clearErrorForStatus(OrderStatus status) {
     _errorByStatus[status] = null;
-    notifyListeners();
-  }
-
-  void clearAllOrdersError() {
-    _allOrdersError = null;
     notifyListeners();
   }
 

@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:nalogistics_app/core/constants/api_constants.dart';
+import 'package:nalogistics_app/core/constants/error_codes.dart';
+import 'package:nalogistics_app/core/services/session_manager.dart';
 import 'package:nalogistics_app/core/exceptions/network_exception.dart';
 import 'package:nalogistics_app/data/services/local/storage_service.dart';
 import 'package:nalogistics_app/core/constants/app_constants.dart';
@@ -13,6 +15,7 @@ class ApiClient {
 
   static const int timeoutDuration = 30; // seconds
   final StorageService _storage = StorageService();
+  final SessionManager _sessionManager = SessionManager();
 
   Future<Map<String, String>> _getHeaders({bool requiresAuth = false}) async {
     Map<String, String> headers = {
@@ -48,12 +51,13 @@ class ApiClient {
         uri,
         headers: headers,
         body: body != null ? json.encode(body) : null,
-      ).timeout(const Duration(seconds: timeoutDuration));
+      )
+          .timeout(const Duration(seconds: timeoutDuration));
 
       print('📨 Response Status: ${response.statusCode}');
       print('📄 Response Body: ${response.body}');
 
-      return _handleResponse(response);
+      return _handleResponse(response, requiresAuth: requiresAuth);
     } on SocketException catch (e) {
       print('❌ Network Error: $e');
       throw NetworkException('Không có kết nối internet');
@@ -93,7 +97,7 @@ class ApiClient {
       print('📨 Response Status: ${response.statusCode}');
       print('📄 Response Body: ${response.body}');
 
-      return _handleResponse(response);
+      return _handleResponse(response, requiresAuth: requiresAuth);
     } on SocketException catch (e) {
       print('❌ Network Error: $e');
       throw NetworkException('Không có kết nối internet');
@@ -115,70 +119,116 @@ class ApiClient {
         Map<String, dynamic>? body,
         bool requiresAuth = true,
       }) async {
-      try {
-        var uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
+    try {
+      var uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
 
-        if (queryParams != null && queryParams.isNotEmpty) {
-          uri = uri.replace(queryParameters: queryParams);
-        }
-
-        final headers = await _getHeaders(requiresAuth: requiresAuth);
-
-        print('🚀 API Request: PUT $uri');
-        print('📋 Headers: $headers');
-        print('📦 Body: $body');
-
-        final response = await http
-            .put(
-          uri,
-          headers: headers,
-          body: body != null ? json.encode(body) : null,
-        ).timeout(const Duration(seconds: timeoutDuration));
-
-        print('📨 Response Status: ${response.statusCode}');
-        print('📄 Response Body: ${response.body}');
-
-        return _handleResponse(response);
-      } on SocketException catch (e) {
-        print('❌ Network Error: $e');
-        throw NetworkException('Không có kết nối internet');
-      } on http.ClientException catch (e) {
-        print('❌ Client Error: $e');
-        throw NetworkException('Lỗi kết nối với server');
-      } on FormatException catch (e) {
-        print('❌ Format Error: $e');
-        throw NetworkException('Dữ liệu trả về không hợp lệ');
-      } catch (e) {
-        print('❌ Unknown Error: $e');
-        throw NetworkException('Có lỗi xảy ra: ${e.toString()}');
+      if (queryParams != null && queryParams.isNotEmpty) {
+        uri = uri.replace(queryParameters: queryParams);
       }
+
+      final headers = await _getHeaders(requiresAuth: requiresAuth);
+
+      print('🚀 API Request: PUT $uri');
+      print('📋 Headers: $headers');
+      print('📦 Body: $body');
+
+      final response = await http
+          .put(
+        uri,
+        headers: headers,
+        body: body != null ? json.encode(body) : null,
+      )
+          .timeout(const Duration(seconds: timeoutDuration));
+
+      print('📨 Response Status: ${response.statusCode}');
+      print('📄 Response Body: ${response.body}');
+
+      return _handleResponse(response, requiresAuth: requiresAuth);
+    } on SocketException catch (e) {
+      print('❌ Network Error: $e');
+      throw NetworkException('Không có kết nối internet');
+    } on http.ClientException catch (e) {
+      print('❌ Client Error: $e');
+      throw NetworkException('Lỗi kết nối với server');
+    } on FormatException catch (e) {
+      print('❌ Format Error: $e');
+      throw NetworkException('Dữ liệu trả về không hợp lệ');
+    } catch (e) {
+      print('❌ Unknown Error: $e');
+      throw NetworkException('Có lỗi xảy ra: ${e.toString()}');
+    }
   }
 
-  Map<String, dynamic> _handleResponse(http.Response response) {
+  Map<String, dynamic> _handleResponse(
+      http.Response response, {
+        required bool requiresAuth,
+      }) {
     try {
       final Map<String, dynamic> data = json.decode(response.body);
 
       // API của bạn luôn trả về statusCode trong body
       final apiStatusCode = data['statusCode'] ?? response.statusCode;
+      final message = data['message'] ?? data['Message'] ?? '';
+
+      // ⚠️ CHECK TOKEN EXPIRATION
+      if (requiresAuth &&
+          (response.statusCode == ErrorCodes.unauthorized ||
+              response.statusCode == ErrorCodes.forbidden)) {
+
+        // Check if message indicates token expiration
+        if (ErrorCodes.isTokenExpiredError(message)) {
+          print('🔴 Token expired detected in response');
+
+          // Trigger session expired handler
+          _sessionManager.handleTokenExpired(
+            message: message.isNotEmpty
+                ? message
+                : 'Phiên đăng nhập đã hết hạn',
+          );
+
+          throw NetworkException(
+            'Token đã hết hạn. Vui lòng đăng nhập lại.',
+            statusCode: ErrorCodes.tokenExpired,
+          );
+        }
+      }
 
       switch (response.statusCode) {
         case 200:
         case 201:
           return data;
         case 400:
-          throw NetworkException(data['Message'] ?? 'Yêu cầu không hợp lệ');
+          throw NetworkException(
+            message.isNotEmpty ? message : 'Yêu cầu không hợp lệ',
+            statusCode: 400,
+          );
         case 401:
-          throw NetworkException(data['Message'] ?? 'Không có quyền truy cập');
+          throw NetworkException(
+            message.isNotEmpty ? message : 'Không có quyền truy cập',
+            statusCode: 401,
+          );
         case 403:
-          throw NetworkException(data['Message'] ?? 'Truy cập bị từ chối');
+          throw NetworkException(
+            message.isNotEmpty ? message : 'Truy cập bị từ chối',
+            statusCode: 403,
+          );
         case 404:
-          throw NetworkException(data['Message'] ?? 'Không tìm thấy dữ liệu');
+          throw NetworkException(
+            message.isNotEmpty ? message : 'Không tìm thấy dữ liệu',
+            statusCode: 404,
+          );
         case 500:
-          throw NetworkException(data['Message'] ?? 'Lỗi server nội bộ');
+          throw NetworkException(
+            message.isNotEmpty ? message : 'Lỗi server nội bộ',
+            statusCode: 500,
+          );
         default:
         // Check API's internal status code
           if (apiStatusCode != 200) {
-            throw NetworkException(data['Message'] ?? 'Có lỗi xảy ra');
+            throw NetworkException(
+              message.isNotEmpty ? message : 'Có lỗi xảy ra',
+              statusCode: apiStatusCode,
+            );
           }
           return data;
       }

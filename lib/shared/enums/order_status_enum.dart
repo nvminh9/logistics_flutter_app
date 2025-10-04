@@ -1,13 +1,14 @@
 import 'dart:ui';
 
 enum OrderStatus {
-  inProgress,    // 0
-  pickedUp,      // 1
-  inTransit,     // 2
-  delivered,     // 3
-  completed,     // 4
-  cancelled,     // 5
-  failedDelivery // 6
+  pending,       // 0
+  inProgress,    // 1
+  pickedUp,      // 2
+  inTransit,     // 3
+  delivered,     // 4
+  completed,     // 5
+  cancelled,     // 6
+  failedDelivery // 7
 }
 
 extension OrderStatusExtension on OrderStatus {
@@ -15,6 +16,8 @@ extension OrderStatusExtension on OrderStatus {
   // Lấy tên hiển thị của trạng thái
   String get displayName {
     switch (this) {
+      case OrderStatus.pending:
+        return 'Chờ xử lý';
       case OrderStatus.inProgress:
         return 'Đang xử lý';
       case OrderStatus.pickedUp:
@@ -35,6 +38,8 @@ extension OrderStatusExtension on OrderStatus {
   // Lấy tên viết tắt của trạng thái
   String get shortName {
     switch (this) {
+      case OrderStatus.pending:
+        return 'Chờ xử lý';
       case OrderStatus.inProgress:
         return 'Chờ lấy hàng';
       case OrderStatus.pickedUp:
@@ -55,6 +60,8 @@ extension OrderStatusExtension on OrderStatus {
   // Màu sắc cho từng status
   Color get color {
     switch (this) {
+      case OrderStatus.pending:
+        return const Color(0xFF9E9E9E); // Grey
       case OrderStatus.inProgress:
         return const Color(0xFFFF9800); // Orange
       case OrderStatus.pickedUp:

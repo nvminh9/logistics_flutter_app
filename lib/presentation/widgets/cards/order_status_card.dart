@@ -277,6 +277,8 @@ class OrderStatusCard extends StatelessWidget {
 
   Color _getStatusColor(OrderStatus status) {
     switch (status) {
+      case OrderStatus.pending:
+        return OrderStatus.pending.color;
       case OrderStatus.inProgress:
         return OrderStatus.inProgress.color;
       case OrderStatus.pickedUp:
@@ -296,6 +298,8 @@ class OrderStatusCard extends StatelessWidget {
 
   IconData _getStatusIcon(OrderStatus status) {
     switch (status) {
+      case OrderStatus.pending:
+        return Icons.pending_actions;
       case OrderStatus.inProgress:
         return Icons.hourglass_empty;
       case OrderStatus.pickedUp:

@@ -276,6 +276,8 @@ class StatusOrderCard extends StatelessWidget {
 
   String _getActionText(OrderStatus status) {
     switch (status) {
+      case OrderStatus.pending:
+        return 'Đơn hàng đang chờ được xử lý';
       case OrderStatus.inProgress:
         return 'Đơn hàng đang được xử lý...';
       case OrderStatus.pickedUp:

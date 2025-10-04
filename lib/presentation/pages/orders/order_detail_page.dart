@@ -839,17 +839,17 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
                 ? 'Đã hoàn thành'
                 : 'Chưa hoàn thành',
             isCompleted: order.orderStatus.index >= OrderStatus.delivered.index,
-            isLast: false,
-          ),
-          _buildTimelineItem(
-            icon: Icons.done_all_rounded,
-            title: 'Hoàn thành',
-            time: order.orderStatus.index >= OrderStatus.completed.index
-                ? 'Đã hoàn thành'
-                : 'Chưa hoàn thành',
-            isCompleted: order.orderStatus.index >= OrderStatus.completed.index,
             isLast: true,
           ),
+          // _buildTimelineItem(
+          //   icon: Icons.done_all_rounded,
+          //   title: 'Hoàn thành',
+          //   time: order.orderStatus.index >= OrderStatus.completed.index
+          //       ? 'Đã hoàn thành'
+          //       : 'Chưa hoàn thành',
+          //   isCompleted: order.orderStatus.index >= OrderStatus.completed.index,
+          //   isLast: true,
+          // ),
         ],
       ),
     );
@@ -986,14 +986,14 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
         buttonIcon = Icons.location_on;
         break;
       case OrderStatus.delivered:
-        nextStatus = OrderStatus.delivered;
+        nextStatus = OrderStatus.completed;
         break;
       default:
         nextStatus = null;
     }
 
-    // Nếu đơn hàng đã giao
-    if(nextStatus == OrderStatus.delivered){
+    // Nếu đơn hàng đã giao thì không hiện nút xác nhận nữa
+    if(nextStatus == OrderStatus.completed){
       return Container();
     }
 

@@ -1,5 +1,8 @@
+// lib/presentation/pages/profile/profile_page.dart (Updated)
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:nalogistics_app/core/constants/strings.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
 import 'package:nalogistics_app/core/utils/date_formatter.dart';
@@ -9,7 +12,8 @@ import 'package:nalogistics_app/core/constants/app_constants.dart';
 import 'package:nalogistics_app/presentation/routes/route_names.dart';
 import 'package:nalogistics_app/presentation/widgets/common/custom_button.dart';
 import 'package:nalogistics_app/presentation/widgets/common/app_bar_widget.dart';
-import 'package:nalogistics_app/presentation/widgets/common/test_token_expiration_button.dart';
+import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
+import 'package:nalogistics_app/shared/enums/user_role_enum.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -61,7 +65,6 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     super.dispose();
   }
 
-  // Helper để check debug mode
   bool _isDebugMode() {
     bool isDebug = false;
     assert(() {
@@ -98,8 +101,8 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     );
 
     if (shouldLogout == true) {
-      final storageService = StorageService();
-      await storageService.clear();
+      final authController = Provider.of<AuthController>(context, listen: false);
+      await authController.logout();
 
       if (!mounted) return;
       context.go(RouteNames.login);
@@ -170,14 +173,18 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
               children: [
                 _buildProfileHeader(),
                 const SizedBox(height: 10),
+
+                // ⭐ Role Badge Display
+                _buildRoleBadge(),
+                const SizedBox(height: 10),
+
                 _buildStatsCards(),
                 const SizedBox(height: 10),
                 _buildProfileInfo(),
                 const SizedBox(height: 10),
 
-                // ⭐ THÊM TEST SECTION (Only in debug mode)
-                // Remove this in production!
-                if (_isDebugMode()) const TokenExpirationTestSection(),
+                // ⭐ Permission Info (Debug)
+                if (_isDebugMode()) _buildPermissionInfo(),
                 if (_isDebugMode()) const SizedBox(height: 10),
 
                 _buildLogoutButton(),
@@ -189,77 +196,233 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildProfileHeader() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        // gradient: AppColors.primaryGradient,
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(24),
-        // boxShadow: [
-        //   BoxShadow(
-        //     color: AppColors.primaryBackground.withOpacity(0.3),
-        //     blurRadius: 20,
-        //     offset: const Offset(0, 10),
-        //   ),
-        // ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: AppColors.maritimeDarkBlue,
-              shape: BoxShape.circle,
-              // boxShadow: [
-              //   BoxShadow(
-              //     color: Colors.black.withOpacity(0.1),
-              //     blurRadius: 10,
-              //     offset: const Offset(0, 5),
-              //   ),
-              // ],
-            ),
-            child: CircleAvatar(
-              radius: 40,
-              backgroundColor: AppColors.maritimeDarkBlue,
-              child: driver?.avatar != null
-                  ? ClipOval(
-                child: Image.network(
-                  driver!.avatar!,
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.cover,
+  // ⭐ Role Badge Widget
+  Widget _buildRoleBadge() {
+    return Consumer<AuthController>(
+      builder: (context, authController, child) {
+        final role = authController.userRole;
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: Colors.black26, width: 1),
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [AppColors.cardShadow],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Color(role.colorValue).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Color(role.colorValue).withOpacity(0.3),
+                    width: 2,
+                  ),
                 ),
-              )
-                  : Text(
-                driver?.name.substring(0, 1).toUpperCase() ?? 'T',
-                style: const TextStyle(
-                  fontSize: 28,
-                  color: AppColors.primaryBackground,
-                  fontWeight: FontWeight.bold,
+                child: Center(
+                  child: Text(
+                    role.icon,
+                    style: const TextStyle(fontSize: 32),
+                  ),
                 ),
               ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Vai trò',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondaryText,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      role.displayName,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(role.colorValue),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      role.apiName,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.hintText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Color(role.colorValue),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'ID: ${role.id}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ⭐ Permission Info Widget (Debug Only)
+  Widget _buildPermissionInfo() {
+    return Consumer<AuthController>(
+      builder: (context, authController, child) {
+        final role = authController.userRole;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.blue.withOpacity(0.2),
+              width: 2,
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            driver?.name ?? '',
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.security,
+                    color: Colors.blue,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'PERMISSIONS (DEBUG)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildPermissionItem('View Orders', role.canViewOrders),
+              _buildPermissionItem('Update Status', role.canUpdateOrderStatus),
+              _buildPermissionItem('Manage Drivers', role.canManageDrivers),
+              _buildPermissionItem('View Reports', role.canViewReports),
+              _buildPermissionItem('Manage Customers', role.canManageCustomers),
+              _buildPermissionItem('View All Orders', role.canViewAllOrders),
+            ],
           ),
-          const SizedBox(height: 4),
+        );
+      },
+    );
+  }
+
+  Widget _buildPermissionItem(String label, bool hasPermission) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            hasPermission ? Icons.check_circle : Icons.cancel,
+            size: 16,
+            color: hasPermission ? Colors.green : Colors.red,
+          ),
+          const SizedBox(width: 8),
           Text(
-            '@${driver?.username ?? ''}',
+            label,
             style: TextStyle(
-              fontSize: 14,
-              color: Colors.black45.withOpacity(0.8),
+              fontSize: 13,
+              color: hasPermission ? AppColors.primaryText : AppColors.hintText,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildProfileHeader() {
+    return Consumer<AuthController>(
+      builder: (context, authController, child) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.maritimeDarkBlue,
+                  shape: BoxShape.circle,
+                ),
+                child: CircleAvatar(
+                  radius: 40,
+                  backgroundColor: AppColors.maritimeDarkBlue,
+                  child: driver?.avatar != null
+                      ? ClipOval(
+                    child: Image.network(
+                      driver!.avatar!,
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                      : Text(
+                    driver?.name.substring(0, 1).toUpperCase() ?? 'T',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      color: AppColors.primaryBackground,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                driver?.name ?? '',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '@${driver?.username ?? ''}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black45.withOpacity(0.8),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -297,10 +460,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(
-          color: Colors.black26,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.black26, width: 1),
         borderRadius: BorderRadius.circular(10),
         boxShadow: [AppColors.cardShadow],
       ),
@@ -340,10 +500,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(
-          color: Colors.black26,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.black26, width: 1),
         borderRadius: BorderRadius.circular(10),
         boxShadow: [AppColors.cardShadow],
       ),

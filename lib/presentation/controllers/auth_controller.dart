@@ -5,6 +5,7 @@ import 'package:nalogistics_app/data/repositories/implementations/auth_repositor
 import 'package:nalogistics_app/data/models/auth/login_response.dart';
 import 'package:nalogistics_app/core/exceptions/app_exception.dart';
 import 'package:nalogistics_app/core/exceptions/network_exception.dart';
+import 'package:nalogistics_app/shared/enums/user_role_enum.dart';
 
 class AuthController extends BaseController {
   late final LoginUseCase _loginUseCase;
@@ -14,13 +15,20 @@ class AuthController extends BaseController {
   LoginResponse? _loginResponse;
   String? _token;
   String? _roleName;
+  UserRole _userRole = UserRole.unknown;
   bool _isAuthenticated = false;
 
   // Getters
   LoginResponse? get loginResponse => _loginResponse;
   String? get token => _token;
   String? get roleName => _roleName;
+  UserRole get userRole => _userRole;
   bool get isAuthenticated => _isAuthenticated;
+
+  // Role-specific getters
+  bool get isDriver => _userRole.isDriver;
+  bool get isOperator => _userRole.isOperator;
+  bool get hasFullAccess => _userRole.hasFullAccess;
 
   AuthController() {
     _authRepository = AuthRepository();
@@ -34,6 +42,12 @@ class AuthController extends BaseController {
       if (_isAuthenticated) {
         _token = await _authRepository.getToken();
         _roleName = await _authRepository.getRoleName();
+
+        // Parse role từ roleName
+        if (_roleName != null) {
+          _userRole = UserRoleExtension.fromString(_roleName);
+          print('✅ User role loaded: ${_userRole.displayName} (${_userRole.apiName})');
+        }
       }
       notifyListeners();
     } catch (e) {
@@ -57,11 +71,25 @@ class AuthController extends BaseController {
       _loginResponse = response;
       _token = response.data?.token;
       _roleName = response.data?.roleName;
-      _isAuthenticated = true;
 
-      print('✅ Login successful: ${response.message}');
-      print('🔑 Token: ${_token?.substring(0, 20)}...');
-      print('👤 Role: $_roleName');
+      // ⭐ Parse role từ roleName
+      if (_roleName != null) {
+        _userRole = UserRoleExtension.fromString(_roleName);
+        print('🔐 Login successful!');
+        print('   - Role: ${_userRole.displayName}');
+        print('   - API Name: ${_userRole.apiName}');
+        print('   - Role ID: ${_userRole.id}');
+        print('   - Permissions:');
+        print('     • Can view orders: ${_userRole.canViewOrders}');
+        print('     • Can update status: ${_userRole.canUpdateOrderStatus}');
+        print('     • Can manage drivers: ${_userRole.canManageDrivers}');
+        print('     • Can view reports: ${_userRole.canViewReports}');
+      } else {
+        _userRole = UserRole.unknown;
+        print('⚠️ Warning: No role name in response');
+      }
+
+      _isAuthenticated = true;
 
       setLoading(false);
       notifyListeners();
@@ -95,6 +123,7 @@ class AuthController extends BaseController {
       _loginResponse = null;
       _token = null;
       _roleName = null;
+      _userRole = UserRole.unknown;
       _isAuthenticated = false;
 
       clearError();
@@ -108,6 +137,7 @@ class AuthController extends BaseController {
       _loginResponse = null;
       _token = null;
       _roleName = null;
+      _userRole = UserRole.unknown;
       _isAuthenticated = false;
       setLoading(false);
       notifyListeners();
@@ -117,6 +147,17 @@ class AuthController extends BaseController {
   Future<bool> checkAuthStatus() async {
     try {
       _isAuthenticated = await _authRepository.isLoggedIn();
+
+      if (_isAuthenticated) {
+        // Reload role info
+        _token = await _authRepository.getToken();
+        _roleName = await _authRepository.getRoleName();
+
+        if (_roleName != null) {
+          _userRole = UserRoleExtension.fromString(_roleName);
+        }
+      }
+
       notifyListeners();
       return _isAuthenticated;
     } catch (e) {
@@ -124,6 +165,18 @@ class AuthController extends BaseController {
       return false;
     }
   }
+
+  // ⭐ Permission checking methods
+  bool canAccessFeature(String feature) {
+    return PermissionHelper.canAccessFeature(_userRole, feature);
+  }
+
+  bool get canViewOrders => _userRole.canViewOrders;
+  bool get canUpdateOrderStatus => _userRole.canUpdateOrderStatus;
+  bool get canManageDrivers => _userRole.canManageDrivers;
+  bool get canViewReports => _userRole.canViewReports;
+  bool get canManageCustomers => _userRole.canManageCustomers;
+  bool get canViewAllOrders => _userRole.canViewAllOrders;
 
   void clearLoginData() {
     _loginResponse = null;

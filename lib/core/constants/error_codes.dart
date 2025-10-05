@@ -11,6 +11,7 @@ class ErrorCodes {
 
   // Error Keys trong response từ API
   static const List<String> tokenExpiredKeys = [
+    'the token is expired',
     'token expired',
     'token_expired',
     'session expired',
@@ -26,6 +27,7 @@ class ErrorCodes {
     if (message == null) return false;
 
     final lowerMessage = message.toLowerCase();
+    print(lowerMessage);
     return tokenExpiredKeys.any((key) => lowerMessage.contains(key));
   }
 }

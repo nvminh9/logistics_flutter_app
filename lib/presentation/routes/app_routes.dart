@@ -1,19 +1,17 @@
+// lib/presentation/routes/app_routes.dart
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nalogistics_app/presentation/pages/splash/splash_page.dart';
-import 'package:nalogistics_app/presentation/pages/auth/login_page.dart';
-import 'package:nalogistics_app/presentation/pages/main/main_navigation_page.dart';
+import 'package:nalogistics_app/presentation/pages/splash/api_splash_page.dart';
+import 'package:nalogistics_app/presentation/pages/auth/api_login_page.dart';
+import 'package:nalogistics_app/presentation/pages/main/role_based_main_navigation.dart';
 import 'package:nalogistics_app/presentation/pages/orders/order_detail_page.dart';
 import 'package:nalogistics_app/presentation/routes/route_names.dart';
-import 'package:nalogistics_app/presentation/pages/auth/api_login_page.dart';
-import 'package:nalogistics_app/presentation/pages/splash/api_splash_page.dart';
-import 'package:nalogistics_app/main.dart'; // Import navigatorKey
+import 'package:nalogistics_app/main.dart';
 
 class AppRoutes {
   static final GoRouter router = GoRouter(
-    // ⭐ Set navigator key để SessionManager có thể navigate
     navigatorKey: navigatorKey,
-
     initialLocation: RouteNames.splash,
 
     routes: [
@@ -27,10 +25,11 @@ class AppRoutes {
         name: 'login',
         builder: (context, state) => const ApiLoginPage(),
       ),
+      // ⭐ Updated to use Role-based Navigation
       GoRoute(
         path: RouteNames.main,
         name: 'main',
-        builder: (context, state) => const MainNavigationPage(),
+        builder: (context, state) => const RoleBasedMainNavigation(),
       ),
       GoRoute(
         path: '${RouteNames.orderDetail}/:orderID',
@@ -42,7 +41,6 @@ class AppRoutes {
       ),
     ],
 
-    // ⭐ Error handler cho routing errors
     errorBuilder: (context, state) {
       return Scaffold(
         body: Center(

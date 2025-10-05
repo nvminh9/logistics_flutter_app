@@ -164,19 +164,30 @@ class ApiClient {
         required bool requiresAuth,
       }) {
     try {
-      final Map<String, dynamic> data = json.decode(response.body);
+      final Map<String, dynamic> data = json.decode(response.body.toString());
+      // final Map<String, dynamic> data = {
+      //   "statusCode": response.statusCode,
+      //   "message": response.body.toString(),
+      // };
 
       // API của bạn luôn trả về statusCode trong body
       final apiStatusCode = data['statusCode'] ?? response.statusCode;
       final message = data['message'] ?? data['Message'] ?? '';
+      // final apiStatusCode = data['statusCode'];
+      // final message = data['message'];
+
+      print(apiStatusCode);
+      print(message);
 
       // ⚠️ CHECK TOKEN EXPIRATION
       if (requiresAuth &&
-          (response.statusCode == ErrorCodes.unauthorized ||
-              response.statusCode == ErrorCodes.forbidden)) {
+          (apiStatusCode == ErrorCodes.unauthorized ||
+              apiStatusCode == ErrorCodes.forbidden)) {
+        // print('CHECK TOKEN EXPIRATION: ');
+        // print(ErrorCodes.isTokenExpiredError(response.body.toString()));
 
         // Check if message indicates token expiration
-        if (ErrorCodes.isTokenExpiredError(message)) {
+        if (ErrorCodes.isTokenExpiredError(response.body.toString())) {
           print('🔴 Token expired detected in response');
 
           // Trigger session expired handler
@@ -195,6 +206,7 @@ class ApiClient {
 
       switch (response.statusCode) {
         case 200:
+          return data;
         case 201:
           return data;
         case 400:

@@ -32,8 +32,13 @@ class LoginUseCase {
         password: password,
       );
 
+      print("CONCAK NÈ");
+      
       // Call repository
       final response = await _authRepository.login(request);
+
+      print("CONCAK NÈ CAI DMM");
+      print(response);
 
       // Validate response
       if (!response.isSuccess) {
@@ -49,6 +54,8 @@ class LoginUseCase {
       if (response.data!.token.isEmpty) {
         throw AppException('Token không hợp lệ');
       }
+
+      print("CONCAK NÈ NÈ CLM");
 
       return response;
     } catch (e) {

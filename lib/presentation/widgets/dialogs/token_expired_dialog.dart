@@ -1,14 +1,16 @@
+// lib/presentation/widgets/dialogs/token_expired_dialog.dart
+
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
+import 'package:nalogistics_app/presentation/routes/route_names.dart';
 
 class TokenExpiredDialog extends StatelessWidget {
   final String? message;
-  final VoidCallback onLoginAgain;
 
   const TokenExpiredDialog({
     Key? key,
     this.message,
-    required this.onLoginAgain,
   }) : super(key: key);
 
   @override
@@ -113,7 +115,13 @@ class TokenExpiredDialog extends StatelessWidget {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: onLoginAgain,
+              onPressed: () {
+                // ⭐ Close dialog first
+                Navigator.of(context).pop();
+
+                // ⭐ Navigate to login page
+                context.go(RouteNames.login);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.maritimeBlue,
                 shape: RoundedRectangleBorder(
@@ -148,14 +156,12 @@ class TokenExpiredDialog extends StatelessWidget {
 Future<void> showTokenExpiredDialog(
     BuildContext context, {
       String? message,
-      required VoidCallback onLoginAgain,
     }) {
   return showDialog(
     context: context,
     barrierDismissible: false,
     builder: (context) => TokenExpiredDialog(
       message: message,
-      onLoginAgain: onLoginAgain,
     ),
   );
 }

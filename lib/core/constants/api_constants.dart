@@ -1,6 +1,6 @@
 class ApiConstants {
-  static const String baseUrl = 'http://10.0.2.2:5167'; // Android Emulator (localhost server)
-// static const String baseUrl = 'http://127.0.0.1:5167'; // iOS Simulator (localhost server)
+  static const String baseUrl = 'http://10.0.2.2:5167'; // Android Emulator
+  // static const String baseUrl = 'http://127.0.0.1:5167'; // iOS Simulator
   static const String apiVersion = '/api';
 
   // Auth endpoints
@@ -8,17 +8,29 @@ class ApiConstants {
   static const String logout = '$apiVersion/Auth/logout';
   static const String driverInfo = '$apiVersion/driver/profile';
 
-  // Order endpoints
-  static const String orders = '$apiVersion/DriverRole/listOrderForDriver'; // List Order
-  static const String orderDetail = '$apiVersion/DriverRole/detailOrderForDriver'; // Order Detail
-  static const String updateOrderStatus = '$apiVersion/DriverRole/updateStatusOrderForDriver'; // Update Order Status
-  // static const String confirmOrder = '$apiVersion/driver/orders/{id}/confirm';
+  // Driver Role endpoints
+  static const String driverOrders = '$apiVersion/DriverRole/listOrderForDriver';
+  static const String driverOrderDetail = '$apiVersion/DriverRole/detailOrderForDriver';
+  static const String driverUpdateStatus = '$apiVersion/DriverRole/updateStatusOrderForDriver';
 
-  // Default query parameters
-  static const Map<String, String> defaultOrderParams = {
+  // Operator Role endpoints
+  static const String operatorOrders = '$apiVersion/Order/listOrder';
+  static const String operatorOrderDetail = '$apiVersion/Order/detailOrder'; // Assuming similar pattern
+  static const String operatorUpdateStatus = '$apiVersion/Order/updateStatusOrder'; // Assuming similar pattern
+
+  // Default query parameters for Driver
+  static const Map<String, String> defaultDriverOrderParams = {
     'order': 'desc',
     'sortBy': 'id',
     'pageSize': '13',
+    'pageNumber': '1',
+  };
+
+  // Default query parameters for Operator
+  static const Map<String, String> defaultOperatorOrderParams = {
+    'order': 'asc',
+    'sortBy': 'id',
+    'pageSize': '30',
     'pageNumber': '1',
   };
 

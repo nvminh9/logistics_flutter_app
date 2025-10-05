@@ -1,4 +1,7 @@
+// lib/data/repositories/implementations/order_repository.dart
+
 import 'package:nalogistics_app/data/models/order/order_api_model.dart';
+import 'package:nalogistics_app/data/models/order/order_operator_model.dart';
 import 'package:nalogistics_app/data/models/order/order_detail_api_model.dart';
 import 'package:nalogistics_app/data/models/order/update_status_response_model.dart';
 import 'package:nalogistics_app/data/repositories/interfaces/i_order_repository.dart';
@@ -8,7 +11,10 @@ import 'package:nalogistics_app/core/constants/api_constants.dart';
 class OrderRepository implements IOrderRepository {
   final ApiClient _apiClient = ApiClient();
 
-  // Danh sách đơn hàng của tài xế
+  // ========================================
+  // DRIVER ROLE METHODS
+  // ========================================
+
   @override
   Future<OrderListResponse> getOrdersForDriver({
     String order = 'desc',
@@ -25,19 +31,18 @@ class OrderRepository implements IOrderRepository {
       };
 
       final response = await _apiClient.get(
-        ApiConstants.orders,
+        ApiConstants.driverOrders,
         queryParams: queryParams,
         requiresAuth: true,
       );
 
       return OrderListResponse.fromJson(response);
     } catch (e) {
-      print('❌ Order Repository Error: $e');
+      print('❌ Driver Order Repository Error: $e');
       rethrow;
     }
   }
 
-  // Chi tiết đơn hàng
   @override
   Future<OrderDetailResponse> getOrderDetail({
     required String orderID,
@@ -48,7 +53,7 @@ class OrderRepository implements IOrderRepository {
       };
 
       final response = await _apiClient.get(
-        ApiConstants.orderDetail,
+        ApiConstants.driverOrderDetail,
         queryParams: queryParams,
         requiresAuth: true,
       );
@@ -60,7 +65,6 @@ class OrderRepository implements IOrderRepository {
     }
   }
 
-  // Cập nhật trạng thái đơn hàng
   @override
   Future<UpdateStatusResponse> updateOrderStatus({
     required String orderID,
@@ -72,17 +76,109 @@ class OrderRepository implements IOrderRepository {
         'statusString': statusValue.toString(),
       };
 
-      print('📤 Updating order status: orderID=$orderID, status=$statusValue');
+      print('📤 Updating Driver order status: orderID=$orderID, status=$statusValue');
 
       final response = await _apiClient.put(
-        ApiConstants.updateOrderStatus,
+        ApiConstants.driverUpdateStatus,
         queryParams: queryParams,
         requiresAuth: true,
       );
 
       return UpdateStatusResponse.fromJson(response);
     } catch (e) {
-      print('❌ Update Order Status Repository Error: $e');
+      print('❌ Update Driver Order Status Error: $e');
+      rethrow;
+    }
+  }
+
+  // ========================================
+  // OPERATOR ROLE METHODS (NEW)
+  // ========================================
+
+  @override
+  Future<OperatorOrderListResponse> getOrdersForOperator({
+    String order = 'asc',
+    String sortBy = 'id',
+    int pageSize = 30,
+    int pageNumber = 1,
+    String? fromDate,
+    String? toDate,
+  }) async {
+    try {
+      final queryParams = {
+        'order': order,
+        'sortBy': sortBy,
+        'pageSize': pageSize.toString(),
+        'pageNumber': pageNumber.toString(),
+      };
+
+      // Add optional date filters
+      if (fromDate != null) {
+        queryParams['fromDate'] = fromDate;
+      }
+      if (toDate != null) {
+        queryParams['toDate'] = toDate;
+      }
+
+      print('📤 Operator fetching orders: $queryParams');
+
+      final response = await _apiClient.get(
+        ApiConstants.operatorOrders,
+        queryParams: queryParams,
+        requiresAuth: true,
+      );
+
+      return OperatorOrderListResponse.fromJson(response);
+    } catch (e) {
+      print('❌ Operator Order Repository Error: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<OrderDetailResponse> getOperatorOrderDetail({
+    required String orderID,
+  }) async {
+    try {
+      final queryParams = {
+        'orderID': orderID,
+      };
+
+      final response = await _apiClient.get(
+        ApiConstants.operatorOrderDetail,
+        queryParams: queryParams,
+        requiresAuth: true,
+      );
+
+      return OrderDetailResponse.fromJson(response);
+    } catch (e) {
+      print('❌ Operator Order Detail Repository Error: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<UpdateStatusResponse> updateOperatorOrderStatus({
+    required String orderID,
+    required int statusValue,
+  }) async {
+    try {
+      final queryParams = {
+        'orderID': orderID,
+        'statusString': statusValue.toString(),
+      };
+
+      print('📤 Updating Operator order status: orderID=$orderID, status=$statusValue');
+
+      final response = await _apiClient.put(
+        ApiConstants.operatorUpdateStatus,
+        queryParams: queryParams,
+        requiresAuth: true,
+      );
+
+      return UpdateStatusResponse.fromJson(response);
+    } catch (e) {
+      print('❌ Update Operator Order Status Error: $e');
       rethrow;
     }
   }

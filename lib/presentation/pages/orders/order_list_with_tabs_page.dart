@@ -1,13 +1,15 @@
-// lib/presentation/pages/orders/order_list_with_tabs_page.dart (4 TABS VERSION)
+// lib/presentation/pages/orders/order_list_with_tabs_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nalogistics_app/shared/enums/user_role_enum.dart';
 import 'package:provider/provider.dart';
-import 'package:nalogistics_app/core/constants/strings.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
 import 'package:nalogistics_app/presentation/controllers/order_controller.dart';
+import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
 import 'package:nalogistics_app/shared/enums/order_status_enum.dart';
 import 'package:nalogistics_app/presentation/widgets/cards/order_status_card.dart';
+import 'package:nalogistics_app/presentation/widgets/cards/operator_order_card.dart';
 
 class OrderListWithTabsPage extends StatefulWidget {
   const OrderListWithTabsPage({super.key});
@@ -57,115 +59,146 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.primaryBackground,
-      appBar: AppBar(
-        title: const Text(
-          'Danh sách đơn hàng',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: AppColors.maritimeBlue,
-        elevation: 0,
-        actions: [
-          // Refresh button để reload tất cả tabs
-          Consumer<OrderController>(
-            builder: (context, controller, child) {
-              return IconButton(
-                icon: controller.isLoading
-                    ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
+    return Consumer<AuthController>(
+      builder: (context, authController, child) {
+        final UserRole userRole = authController.userRole;
+
+        return Scaffold(
+          backgroundColor: AppColors.primaryBackground,
+          appBar: AppBar(
+            title: Row(
+              children: [
+                Text(
+                  'Danh sách đơn hàng',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
-                )
-                    : const Icon(Icons.refresh),
-                onPressed: controller.isLoading
-                    ? null
-                    : () => controller.refreshAllTabs(),
-                tooltip: 'Làm mới tất cả',
-              );
-            },
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true, // Fixed tabs vì chỉ có 4 tabs
-          indicatorColor: Colors.white,
-          indicatorWeight: 3,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w400,
-            fontSize: 13,
-          ),
-          tabs: _tabStatuses.map((status) {
-            return Tab(
-              child: Consumer<OrderController>(
+                ),
+                const SizedBox(width: 8),
+                // ⭐ Role badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Color(userRole.colorValue).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    userRole.displayName,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.maritimeBlue,
+            elevation: 0,
+            actions: [
+              // Refresh button để reload tất cả tabs
+              Consumer<OrderController>(
                 builder: (context, controller, child) {
-                  final count = controller.getOrdersCount(status);
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        status.shortName,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        // overflow: TextOverflow.ellipsis,
+                  return IconButton(
+                    icon: controller.isLoading
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
                       ),
-                      if (count > 0) ...[
-                        const SizedBox(height: 2),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            count.toString(),
-                            style: const TextStyle(
-                              color: AppColors.maritimeBlue,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                    )
+                        : const Icon(Icons.refresh),
+                    onPressed: controller.isLoading
+                        ? null
+                        : () => controller.refreshAllTabs(),
+                    tooltip: 'Làm mới tất cả',
                   );
                 },
               ),
-            );
-          }).toList(),
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: _tabStatuses.map((status) {
-          return _buildOrderList(status);
-        }).toList(),
-      ),
+            ],
+            bottom: TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              indicatorColor: Colors.white,
+              indicatorWeight: 3,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w400,
+                fontSize: 13,
+              ),
+              tabs: _tabStatuses.map((status) {
+                return Tab(
+                  child: Consumer<OrderController>(
+                    builder: (context, controller, child) {
+                      final count = controller.getOrdersCount(status);
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            status.shortName,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                          ),
+                          if (count > 0) ...[
+                            const SizedBox(height: 2),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                count.toString(),
+                                style: const TextStyle(
+                                  color: AppColors.maritimeBlue,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          body: TabBarView(
+            controller: _tabController,
+            children: _tabStatuses.map((status) {
+              return _buildOrderList(status);
+            }).toList(),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildOrderList(OrderStatus status) {
-    return Consumer<OrderController>(
-      builder: (context, controller, child) {
-        final orders = controller.getOrders(status);
-        final isLoading = controller.isLoadingForStatus(status);
-        final hasError = controller.hasErrorForStatus(status);
-        final error = controller.getError(status);
+    return Consumer2<OrderController, AuthController>(
+      builder: (context, orderController, authController, child) {
+        final orders = orderController.getOrders(status);
+        final isLoading = orderController.isLoadingForStatus(status);
+        final hasError = orderController.hasErrorForStatus(status);
+        final error = orderController.getError(status);
+        final userRole = authController.userRole;
 
         // ⭐ LOADING STATE - Khi đang load initial data
         if (isLoading && orders.isEmpty) {
@@ -182,6 +215,15 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                   style: const TextStyle(
                     color: AppColors.secondaryText,
                     fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  userRole.isOperator ? '(Operator Mode)' : '(Driver Mode)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(userRole.colorValue),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -221,7 +263,7 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
-                    onPressed: () => controller.refreshOrders(status),
+                    onPressed: () => orderController.refreshOrders(status),
                     icon: const Icon(Icons.refresh),
                     label: const Text('Thử lại'),
                     style: ElevatedButton.styleFrom(
@@ -265,7 +307,7 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                 ),
                 const SizedBox(height: 16),
                 TextButton.icon(
-                  onPressed: () => controller.refreshOrders(status),
+                  onPressed: () => orderController.refreshOrders(status),
                   icon: const Icon(Icons.refresh),
                   label: const Text('Làm mới'),
                   style: TextButton.styleFrom(
@@ -279,16 +321,16 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
 
         // ⭐ LIST VIEW WITH DATA
         return RefreshIndicator(
-          onRefresh: () => controller.refreshOrders(status),
+          onRefresh: () => orderController.refreshOrders(status),
           color: AppColors.maritimeBlue,
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: orders.length + (controller.hasMore(status) ? 1 : 0),
+            itemCount: orders.length + (orderController.hasMore(status) ? 1 : 0),
             itemBuilder: (context, index) {
               // Load more indicator
               if (index >= orders.length) {
                 if (!isLoading) {
-                  controller.loadMoreOrders(status);
+                  orderController.loadMoreOrders(status);
                 }
                 return const Padding(
                   padding: EdgeInsets.all(16),
@@ -301,12 +343,25 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
               }
 
               final order = orders[index];
-              return OrderStatusCard(
-                order: order,
-                onTap: () {
-                  context.push('/order-detail/${order.orderID}');
-                },
-              );
+
+              // ⭐ CHỌN WIDGET CARD DỰA TRÊN ROLE
+              if (userRole.isOperator) {
+                // Operator: Card với nhiều thông tin hơn
+                return OperatorOrderCard(
+                  order: order,
+                  onTap: () {
+                    context.push('/order-detail/${order.orderID}');
+                  },
+                );
+              } else {
+                // Driver: Card đơn giản hơn
+                return OrderStatusCard(
+                  order: order,
+                  onTap: () {
+                    context.push('/order-detail/${order.orderID}');
+                  },
+                );
+              }
             },
           ),
         );

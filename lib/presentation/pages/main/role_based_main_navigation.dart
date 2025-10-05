@@ -1,8 +1,11 @@
+// lib/presentation/pages/main/role_based_main_navigation.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nalogistics_app/core/constants/strings.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
 import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
+import 'package:nalogistics_app/presentation/controllers/order_controller.dart';
 import 'package:nalogistics_app/presentation/pages/home/home_page.dart';
 import 'package:nalogistics_app/presentation/pages/orders/order_list_with_tabs_page.dart';
 import 'package:nalogistics_app/presentation/pages/profile/profile_page.dart';
@@ -25,14 +28,27 @@ class _RoleBasedMainNavigationState extends State<RoleBasedMainNavigation> {
     const ProfilePage(),
   ];
 
-  // ⭐ Pages cho Operator (có thêm Reports/Management)
+  // ⭐ Pages cho Operator
   final List<Widget> _operatorPages = [
-    // const HomePage(),
     const OrderListWithTabsPage(), // Operator sees all orders
-    // TODO: Add Reports page
-    // const Center(child: Text('📊 Reports Page (Coming Soon)')),
     const ProfilePage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ⭐ Set role cho OrderController khi init
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authController = Provider.of<AuthController>(context, listen: false);
+      final orderController = Provider.of<OrderController>(context, listen: false);
+
+      // Set role cho OrderController
+      orderController.setUserRole(authController.userRole);
+
+      print('🔧 Main Navigation: Role set to ${authController.userRole.displayName}');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,13 +99,11 @@ class _RoleBasedMainNavigationState extends State<RoleBasedMainNavigation> {
   List<Widget> _buildNavItems(UserRole role) {
     if (role.isOperator) {
       return [
-        // _buildNavItem(0, Icons.home_rounded, 'Trang chủ'),
         _buildNavItem(0, Icons.assignment_rounded, 'Đơn hàng'),
-        // _buildNavItem(2, Icons.analytics_rounded, 'Báo cáo'),
         _buildNavItem(1, Icons.person_rounded, 'Hồ sơ'),
       ];
     } else {
-      // Driver - 3 tabs only
+      // Driver - 3 tabs
       return [
         _buildNavItem(0, Icons.home_rounded, AppStrings.tabHome),
         _buildNavItem(1, Icons.assignment_rounded, AppStrings.tabOrders),

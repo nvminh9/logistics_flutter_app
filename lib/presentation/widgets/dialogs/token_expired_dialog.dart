@@ -115,13 +115,7 @@ class TokenExpiredDialog extends StatelessWidget {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: () {
-                // ⭐ Close dialog first
-                Navigator.of(context).pop();
-
-                // ⭐ Navigate to login page
-                context.go(RouteNames.login);
-              },
+              onPressed: () => context.go(RouteNames.login),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.maritimeBlue,
                 shape: RoundedRectangleBorder(

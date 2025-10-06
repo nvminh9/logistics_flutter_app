@@ -164,26 +164,9 @@ class ApiClient {
         required bool requiresAuth,
       }) {
     try {
-      final Map<String, dynamic> data = json.decode(response.body.toString());
-      // final Map<String, dynamic> data = {
-      //   "statusCode": response.statusCode,
-      //   "message": response.body.toString(),
-      // };
-
-      // API của bạn luôn trả về statusCode trong body
-      final apiStatusCode = data['statusCode'] ?? response.statusCode;
-      final message = data['message'] ?? data['Message'] ?? '';
-      // final apiStatusCode = data['statusCode'];
-      // final message = data['message'];
-
-      print(apiStatusCode);
-      print(message);
-
       // ⚠️ CHECK TOKEN EXPIRATION
-      if (requiresAuth &&
-          (apiStatusCode == ErrorCodes.unauthorized ||
-              apiStatusCode == ErrorCodes.forbidden)) {
-        // print('CHECK TOKEN EXPIRATION: ');
+      if(requiresAuth && (response.statusCode == ErrorCodes.unauthorized || response.statusCode == ErrorCodes.forbidden)){
+        print('CHECK TOKEN EXPIRATION: ');
         // print(ErrorCodes.isTokenExpiredError(response.body.toString()));
 
         // Check if message indicates token expiration
@@ -192,8 +175,8 @@ class ApiClient {
 
           // Trigger session expired handler
           _sessionManager.handleTokenExpired(
-            message: message.isNotEmpty
-                ? message
+            message: response.body.toString().isNotEmpty
+                ? response.body.toString()
                 : 'Phiên đăng nhập đã hết hạn',
           );
 
@@ -203,6 +186,13 @@ class ApiClient {
           );
         }
       }
+
+      // Nếu token không hết hạn thì xử lý response body
+      final Map<String, dynamic> data = json.decode(response.body.toString());
+
+      // API của bạn luôn trả về statusCode trong body
+      final apiStatusCode = data['statusCode'] ?? response.statusCode;
+      final message = data['message'] ?? data['Message'] ?? '';
 
       switch (response.statusCode) {
         case 200:

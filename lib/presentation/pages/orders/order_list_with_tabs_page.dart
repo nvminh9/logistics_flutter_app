@@ -2,12 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nalogistics_app/shared/enums/user_role_enum.dart';
 import 'package:provider/provider.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
 import 'package:nalogistics_app/presentation/controllers/order_controller.dart';
 import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
 import 'package:nalogistics_app/shared/enums/order_status_enum.dart';
+import 'package:nalogistics_app/shared/enums/user_role_enum.dart';
 import 'package:nalogistics_app/presentation/widgets/cards/order_status_card.dart';
 import 'package:nalogistics_app/presentation/widgets/cards/operator_order_card.dart';
 
@@ -22,25 +22,22 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late OrderController _orderController;
-
-  // ⭐ CHỈ 4 TABS
-  static const List<OrderStatus> _tabStatuses = [
-    OrderStatus.inProgress,   // Chờ lấy hàng
-    OrderStatus.pickedUp,      // Đã lấy hàng
-    OrderStatus.inTransit,     // Đang vận chuyển
-    OrderStatus.delivered,     // Đã giao
-  ];
+  late AuthController _authController;
 
   @override
   void initState() {
     super.initState();
 
-    // TabController cho 4 tabs
-    _tabController = TabController(length: 4, vsync: this);
+    _authController = Provider.of<AuthController>(context, listen: false);
     _orderController = Provider.of<OrderController>(context, listen: false);
 
-    // ⭐ LOAD DỮ LIỆU CHO TẤT CẢ 4 TABS NGAY KHI VÀO TRANG
+    // DYNAMIC TAB COUNT dựa trên role
+    final tabCount = _authController.userRole.isOperator ? 5 : 4;
+    _tabController = TabController(length: tabCount, vsync: this);
+
+    // Set role cho OrderController
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _orderController.setUserRole(_authController.userRole);
       _loadAllTabsData();
     });
   }
@@ -51,32 +48,35 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
     super.dispose();
   }
 
-  // ⭐ LOAD TẤT CẢ 4 TABS CÙNG LÚC
+  // LOAD TẤT CẢ TABS CÙNG LÚC
   Future<void> _loadAllTabsData() async {
-    print('📱 OrderListWithTabsPage: Loading all 4 tabs...');
+    print('📱 Loading all tabs for role: ${_authController.userRole.displayName}');
     await _orderController.loadInitialData();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthController>(
-      builder: (context, authController, child) {
-        final UserRole userRole = authController.userRole;
+    return Consumer2<AuthController, OrderController>(
+      builder: (context, authController, orderController, child) {
+        final userRole = authController.userRole;
+
+        // GET ACTIVE STATUSES từ OrderController (đã có logic role-based)
+        final activeStatuses = orderController.activeStatuses;
 
         return Scaffold(
           backgroundColor: AppColors.primaryBackground,
           appBar: AppBar(
             title: Row(
               children: [
-                Text(
+                const Text(
                   'Danh sách đơn hàng',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
                 const SizedBox(width: 8),
-                // ⭐ Role badge
+                // Role badge
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -88,7 +88,7 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                   ),
                   child: Text(
                     userRole.displayName,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
@@ -101,7 +101,7 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
             backgroundColor: AppColors.maritimeBlue,
             elevation: 0,
             actions: [
-              // Refresh button để reload tất cả tabs
+              // Refresh all tabs
               Consumer<OrderController>(
                 builder: (context, controller, child) {
                   return IconButton(
@@ -138,7 +138,7 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                 fontWeight: FontWeight.w400,
                 fontSize: 13,
               ),
-              tabs: _tabStatuses.map((status) {
+              tabs: activeStatuses.map((status) {
                 return Tab(
                   child: Consumer<OrderController>(
                     builder: (context, controller, child) {
@@ -146,10 +146,27 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                       return Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            status.shortName,
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
+                          // HIGHLIGHT cho Pending tab (Operator only)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (status == OrderStatus.pending) ...[
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.orange,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                              ],
+                              Text(
+                                status.shortName,
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                              ),
+                            ],
                           ),
                           if (count > 0) ...[
                             const SizedBox(height: 2),
@@ -182,8 +199,8 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
           ),
           body: TabBarView(
             controller: _tabController,
-            children: _tabStatuses.map((status) {
-              return _buildOrderList(status);
+            children: activeStatuses.map((status) {
+              return _buildOrderList(status, userRole);
             }).toList(),
           ),
         );
@@ -191,16 +208,15 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
     );
   }
 
-  Widget _buildOrderList(OrderStatus status) {
-    return Consumer2<OrderController, AuthController>(
-      builder: (context, orderController, authController, child) {
+  Widget _buildOrderList(OrderStatus status, UserRole userRole) {
+    return Consumer<OrderController>(
+      builder: (context, orderController, child) {
         final orders = orderController.getOrders(status);
         final isLoading = orderController.isLoadingForStatus(status);
         final hasError = orderController.hasErrorForStatus(status);
         final error = orderController.getError(status);
-        final userRole = authController.userRole;
 
-        // ⭐ LOADING STATE - Khi đang load initial data
+        // LOADING STATE
         if (isLoading && orders.isEmpty) {
           return Center(
             child: Column(
@@ -231,7 +247,7 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
           );
         }
 
-        // ⭐ ERROR STATE
+        // ERROR STATE
         if (hasError && orders.isEmpty) {
           return Center(
             child: Padding(
@@ -277,7 +293,7 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
           );
         }
 
-        // ⭐ EMPTY STATE
+        // EMPTY STATE
         if (orders.isEmpty) {
           return Center(
             child: Column(
@@ -319,7 +335,7 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
           );
         }
 
-        // ⭐ LIST VIEW WITH DATA
+        // LIST VIEW WITH DATA
         return RefreshIndicator(
           onRefresh: () => orderController.refreshOrders(status),
           color: AppColors.maritimeBlue,
@@ -344,7 +360,7 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
 
               final order = orders[index];
 
-              // ⭐ CHỌN WIDGET CARD DỰA TRÊN ROLE
+              // CHỌN WIDGET CARD DỰA TRÊN ROLE
               if (userRole.isOperator) {
                 // Operator: Card với nhiều thông tin hơn
                 return OperatorOrderCard(
@@ -371,6 +387,8 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
 
   IconData _getEmptyIcon(OrderStatus status) {
     switch (status) {
+      case OrderStatus.pending:
+        return Icons.pending_actions;
       case OrderStatus.inProgress:
         return Icons.hourglass_empty;
       case OrderStatus.pickedUp:
@@ -386,6 +404,8 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
 
   String _getEmptyMessage(OrderStatus status) {
     switch (status) {
+      case OrderStatus.pending:
+        return 'Không có đơn hàng chờ xử lý';
       case OrderStatus.inProgress:
         return 'Tất cả đơn hàng đều đã được xử lý';
       case OrderStatus.pickedUp:

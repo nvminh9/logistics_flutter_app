@@ -3,22 +3,35 @@ class ApiConstants {
   // static const String baseUrl = 'http://127.0.0.1:5167'; // iOS Simulator
   static const String apiVersion = '/api';
 
-  // Auth endpoints
+  // ==========================================
+  // AUTH ENDPOINTS
+  // ==========================================
   static const String login = '$apiVersion/Auth/login';
   static const String logout = '$apiVersion/Auth/logout';
   static const String driverInfo = '$apiVersion/driver/profile';
 
-  // Driver Role endpoints
+  // ==========================================
+  // DRIVER ROLE ENDPOINTS
+  // ==========================================
   static const String driverOrders = '$apiVersion/DriverRole/listOrderForDriver';
   static const String driverOrderDetail = '$apiVersion/DriverRole/detailOrderForDriver';
   static const String driverUpdateStatus = '$apiVersion/DriverRole/updateStatusOrderForDriver';
 
-  // Operator Role endpoints
+  // ==========================================
+  // OPERATOR ROLE ENDPOINTS
+  // ==========================================
   static const String operatorOrders = '$apiVersion/Order/listOrder';
-  static const String operatorOrderDetail = '$apiVersion/Order/detailOrder'; // Assuming similar pattern
-  static const String operatorUpdateStatus = '$apiVersion/Order/updateStatusOrder'; // Assuming similar pattern
 
-  // Default query parameters for Driver
+  /// ⭐ NEW: Operator order detail với query param 'id'
+  static const String operatorOrderDetail = '$apiVersion/Order/detailOrder';
+
+  static const String operatorUpdateStatus = '$apiVersion/Order/updateStatusOrder';
+
+  // ==========================================
+  // DEFAULT QUERY PARAMETERS
+  // ==========================================
+
+  /// Driver default params
   static const Map<String, String> defaultDriverOrderParams = {
     'order': 'desc',
     'sortBy': 'id',
@@ -26,7 +39,7 @@ class ApiConstants {
     'pageNumber': '1',
   };
 
-  // Default query parameters for Operator
+  /// Operator default params
   static const Map<String, String> defaultOperatorOrderParams = {
     'order': 'asc',
     'sortBy': 'id',
@@ -34,13 +47,33 @@ class ApiConstants {
     'pageNumber': '1',
   };
 
-  // Timeout settings
+  // ==========================================
+  // TIMEOUT SETTINGS
+  // ==========================================
   static const int connectTimeout = 30000;
   static const int receiveTimeout = 30000;
 
-  // Headers
+  // ==========================================
+  // HEADERS
+  // ==========================================
   static const Map<String, String> defaultHeaders = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   };
+
+  // ==========================================
+  // HELPER METHODS
+  // ==========================================
+
+  /// Build full URL cho Operator order detail
+  /// Example: /api/Order/detailOrder?id=12
+  static String getOperatorOrderDetailUrl(String orderId) {
+    return '$operatorOrderDetail?id=$orderId';
+  }
+
+  /// Build full URL cho Driver order detail
+  /// Example: /api/DriverRole/detailOrderForDriver?orderID=12
+  static String getDriverOrderDetailUrl(String orderId) {
+    return '$driverOrderDetail?orderID=$orderId';
+  }
 }

@@ -3,6 +3,7 @@
 import 'package:nalogistics_app/data/models/order/order_api_model.dart';
 import 'package:nalogistics_app/data/models/order/order_operator_model.dart';
 import 'package:nalogistics_app/data/models/order/order_detail_api_model.dart';
+import 'package:nalogistics_app/data/models/order/operator_order_detail_model.dart';
 import 'package:nalogistics_app/data/models/order/update_status_response_model.dart';
 import 'package:nalogistics_app/data/repositories/interfaces/i_order_repository.dart';
 import 'package:nalogistics_app/data/services/api/api_client.dart';
@@ -92,7 +93,7 @@ class OrderRepository implements IOrderRepository {
   }
 
   // ========================================
-  // OPERATOR ROLE METHODS (NEW)
+  // OPERATOR ROLE METHODS
   // ========================================
 
   @override
@@ -135,14 +136,18 @@ class OrderRepository implements IOrderRepository {
     }
   }
 
+  /// ⭐ NEW: Operator Order Detail với API khác
+  /// URI: /api/Order/detailOrder?id=12 (chú ý param là 'id' chứ không phải 'orderID')
   @override
-  Future<OrderDetailResponse> getOperatorOrderDetail({
+  Future<OperatorOrderDetailResponse> getOperatorOrderDetail({
     required String orderID,
   }) async {
     try {
       final queryParams = {
-        'orderID': orderID,
+        'id': orderID, // ⭐ Operator API dùng 'id' thay vì 'orderID'
       };
+
+      print('📤 Operator fetching order detail: id=$orderID');
 
       final response = await _apiClient.get(
         ApiConstants.operatorOrderDetail,
@@ -150,7 +155,9 @@ class OrderRepository implements IOrderRepository {
         requiresAuth: true,
       );
 
-      return OrderDetailResponse.fromJson(response);
+      print('📥 Operator order detail response: ${response['statusCode']}');
+
+      return OperatorOrderDetailResponse.fromJson(response);
     } catch (e) {
       print('❌ Operator Order Detail Repository Error: $e');
       rethrow;

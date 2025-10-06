@@ -18,6 +18,7 @@ class OperatorOrderDetailController extends BaseController {
   OperatorOrderDetailModel? _orderDetail;
   bool _isConfirming = false;
   bool _isUpdatingStatus = false;
+  String? _currentOrderID; // Track current order ID
 
   // Getters
   OperatorOrderDetailModel? get orderDetail => _orderDetail;
@@ -36,6 +37,7 @@ class OperatorOrderDetailController extends BaseController {
     try {
       setLoading(true);
       clearError();
+      _currentOrderID = orderID; // Save current order ID
 
       print('📦 Loading operator order detail for ID: $orderID');
 
@@ -58,6 +60,7 @@ class OperatorOrderDetailController extends BaseController {
       print('❌ Load Operator Order Detail Error: $e');
       setError(e.toString());
       setLoading(false);
+      notifyListeners();
     }
   }
 
@@ -78,16 +81,16 @@ class OperatorOrderDetailController extends BaseController {
       clearError();
       notifyListeners();
 
-      print('🔄 Confirming pending order ${_orderDetail!.orderDate}');
+      // Sử dụng orderID từ createdDate như trong API
+      final orderIdString = _orderDetail!.createdDate.millisecondsSinceEpoch.toString();
+
+      print('🔄 Confirming pending order: ${_currentOrderID ?? orderIdString}');
 
       final confirmedOrderId = await _confirmPendingOrderUseCase.execute(
-        orderID: _orderDetail!.orderDate.toString(), // orderID as string
+        orderID: _currentOrderID ?? orderIdString,
       );
 
       print('✅ Order confirmed successfully: $confirmedOrderId');
-
-      // Reload order detail to get updated status
-      await reloadOrderDetail();
 
       _isConfirming = false;
       notifyListeners();
@@ -119,14 +122,11 @@ class OperatorOrderDetailController extends BaseController {
 
       // Gọi API update status cho Operator
       await _orderRepository.updateOperatorOrderStatus(
-        orderID: _orderDetail!.orderDate.toString(),
+        orderID: _currentOrderID ?? _orderDetail!.createdDate.millisecondsSinceEpoch.toString(),
         statusValue: newStatus.value,
       );
 
       print('✅ Order status updated successfully');
-
-      // Reload order detail
-      await reloadOrderDetail();
 
       _isUpdatingStatus = false;
       notifyListeners();
@@ -142,16 +142,55 @@ class OperatorOrderDetailController extends BaseController {
     }
   }
 
-  /// Reload order detail
+  /// Reload order detail với retry logic
   Future<void> reloadOrderDetail() async {
-    if (_orderDetail != null) {
-      await loadOrderDetail(_orderDetail!.orderDate.toString());
+    if (_currentOrderID == null) {
+      print('⚠️ No order ID to reload');
+      return;
+    }
+
+    int retryCount = 0;
+    const maxRetries = 3;
+    const retryDelay = Duration(seconds: 1);
+
+    while (retryCount < maxRetries) {
+      try {
+        print('🔄 Reloading order detail (attempt ${retryCount + 1}/$maxRetries)');
+
+        // Don't set loading state during reload to avoid UI flicker
+        clearError();
+
+        final detail = await _getOrderDetailUseCase.execute(
+          orderID: _currentOrderID!,
+        );
+
+        _orderDetail = detail;
+        print('✅ Order detail reloaded successfully');
+        notifyListeners();
+        return; // Success, exit
+
+      } catch (e) {
+        retryCount++;
+        print('❌ Reload attempt $retryCount failed: $e');
+
+        if (retryCount < maxRetries) {
+          print('⏳ Retrying in ${retryDelay.inSeconds} seconds...');
+          await Future.delayed(retryDelay);
+        } else {
+          // Final retry failed
+          print('❌ All reload attempts failed');
+          setError('Không thể tải lại thông tin đơn hàng. Vui lòng thử lại.');
+          notifyListeners();
+          return;
+        }
+      }
     }
   }
 
   /// Clear order detail
   void clearOrderDetail() {
     _orderDetail = null;
+    _currentOrderID = null;
     clearError();
     notifyListeners();
   }

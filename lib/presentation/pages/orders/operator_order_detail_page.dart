@@ -7,8 +7,7 @@ import 'package:nalogistics_app/core/constants/colors.dart';
 import 'package:nalogistics_app/core/utils/date_formatter.dart';
 import 'package:nalogistics_app/core/utils/money_formatter.dart';
 import 'package:nalogistics_app/data/models/order/operator_order_detail_model.dart';
-import 'package:nalogistics_app/data/repositories/implementations/order_repository.dart';
-import 'package:nalogistics_app/domain/usecases/order/get_operator_order_detail_usecase.dart';
+import 'package:nalogistics_app/presentation/controllers/operator_order_detail_controller.dart';
 import 'package:nalogistics_app/presentation/widgets/common/app_bar_widget.dart';
 import 'package:nalogistics_app/shared/enums/order_status_enum.dart';
 
@@ -22,36 +21,324 @@ class OperatorOrderDetailPage extends StatefulWidget {
 }
 
 class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
-  late GetOperatorOrderDetailUseCase _useCase;
-  OperatorOrderDetailModel? _orderDetail;
-  bool _isLoading = true;
-  String? _errorMessage;
+  late OperatorOrderDetailController _controller;
 
   @override
   void initState() {
     super.initState();
-    _useCase = GetOperatorOrderDetailUseCase(OrderRepository());
+    _controller = Provider.of<OperatorOrderDetailController>(context, listen: false);
     _loadOrderDetail();
   }
 
   Future<void> _loadOrderDetail() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    await _controller.loadOrderDetail(widget.orderID);
+  }
 
-    try {
-      final detail = await _useCase.execute(orderID: widget.orderID);
-      setState(() {
-        _orderDetail = detail;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
+  // ⭐ XỬ LÝ XÁC NHẬN ĐỖN HÀNG PENDING
+  Future<void> _handleConfirmOrder() async {
+    final order = _controller.orderDetail;
+    if (order == null) return;
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _buildConfirmDialog(order),
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: AppColors.maritimeBlue),
+              const SizedBox(height: 20),
+              const Text(
+                'Đang xác nhận đơn hàng...',
+                style: TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Call API to confirm order
+    final success = await _controller.confirmPendingOrder();
+
+    if (!mounted) return;
+
+    // Close loading dialog
+    Navigator.of(context).pop();
+
+    if (success) {
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Xác nhận thành công!',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Đơn hàng #${widget.orderID} đã chuyển sang trạng thái "Đang xử lý"',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.statusDelivered,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 3),
+          padding: const EdgeInsets.all(16),
+        ),
+      );
+
+      // Reload order detail to show updated status with delay
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted) return;
+
+      // Reload with error handling
+      try {
+        await _controller.reloadOrderDetail();
+      } catch (e) {
+        print('⚠️ Error reloading order detail: $e');
+        // If reload fails, try one more time
+        await Future.delayed(const Duration(seconds: 1));
+        if (mounted) {
+          await _controller.reloadOrderDetail();
+        }
+      }
+    } else {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _controller.errorMessage ?? 'Không thể xác nhận đơn hàng. Vui lòng thử lại.',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.statusError,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'Thử lại',
+            textColor: Colors.white,
+            onPressed: _handleConfirmOrder,
+          ),
+        ),
+      );
     }
+  }
+
+  // Dialog xác nhận
+  Widget _buildConfirmDialog(OperatorOrderDetailModel order) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.statusInTransit.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.check_circle_outline,
+              color: AppColors.statusInTransit,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Xác nhận đơn hàng',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Bạn có chắc muốn xác nhận đơn hàng này?',
+            style: TextStyle(
+              fontSize: 16,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.sectionBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.maritimeBlue.withOpacity(0.2),
+              ),
+            ),
+            child: Column(
+              children: [
+                _buildDialogInfoRow(
+                  icon: Icons.badge,
+                  label: 'Mã đơn',
+                  value: '#${widget.orderID}',
+                ),
+                const SizedBox(height: 12),
+                _buildDialogInfoRow(
+                  icon: Icons.person,
+                  label: 'Khách hàng',
+                  value: order.customerName,
+                ),
+                const SizedBox(height: 12),
+                _buildDialogInfoRow(
+                  icon: Icons.local_shipping,
+                  label: 'Tài xế',
+                  value: order.driverName.isNotEmpty ? order.driverName : 'Chưa phân công',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.statusInTransit.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.statusInTransit.withOpacity(0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 20,
+                  color: AppColors.statusInTransit,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Đơn hàng sẽ chuyển sang trạng thái "Đang xử lý"',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.statusInTransit,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
+          child: const Text(
+            'Hủy',
+            style: TextStyle(
+              color: AppColors.secondaryText,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.maritimeBlue,
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: const Text(
+            'Xác nhận',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDialogInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.secondaryText),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryText,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -59,13 +346,52 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     return Scaffold(
       backgroundColor: AppColors.primaryBackground,
       appBar: const AppBarWidget(title: 'Chi tiết đơn hàng'),
-      body: _isLoading
-          ? const Center(
-        child: CircularProgressIndicator(color: AppColors.maritimeBlue),
-      )
-          : _errorMessage != null
-          ? _buildErrorView()
-          : _buildDetailView(),
+      body: Consumer<OperatorOrderDetailController>(
+        builder: (context, controller, child) {
+          if (controller.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.maritimeBlue),
+            );
+          }
+
+          if (controller.hasError) {
+            return _buildErrorView();
+          }
+
+          final order = controller.orderDetail;
+          if (order == null) {
+            return const Center(child: Text('Không tìm thấy đơn hàng'));
+          }
+
+          return _buildDetailView(order);
+        },
+      ),
+      // ⭐ FLOATING ACTION BUTTON CHO PENDING ORDER
+      floatingActionButton: Consumer<OperatorOrderDetailController>(
+        builder: (context, controller, child) {
+          final order = controller.orderDetail;
+
+          // Chỉ hiện nút khi order có status Pending
+          if (order?.orderStatus == OrderStatus.pending &&
+              !controller.isConfirming) {
+            return FloatingActionButton.extended(
+              onPressed: _handleConfirmOrder,
+              backgroundColor: AppColors.statusInTransit,
+              icon: const Icon(Icons.check_circle, color: Colors.white),
+              label: const Text(
+                'Xác nhận đơn hàng',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+            );
+          }
+
+          return const SizedBox.shrink();
+        },
+      ),
     );
   }
 
@@ -91,28 +417,85 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              _errorMessage ?? '',
+              _controller.errorMessage ?? 'Không xác định',
               textAlign: TextAlign.center,
               style: const TextStyle(color: AppColors.secondaryText),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _loadOrderDetail,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Thử lại'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.maritimeBlue,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Quay lại'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.secondaryText,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: _loadOrderDetail,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Thử lại'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.maritimeBlue,
+                  ),
+                ),
+              ],
             ),
+
+            // Debug info (only in debug mode)
+            if (_isDebugMode()) ...[
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'DEBUG INFO:',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Order ID: ${widget.orderID}',
+                      style: const TextStyle(fontSize: 10, color: Colors.grey),
+                    ),
+                    Text(
+                      'Error: ${_controller.errorMessage ?? "null"}',
+                      style: const TextStyle(fontSize: 10, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDetailView() {
-    if (_orderDetail == null) return const SizedBox();
+  /// Check if running in debug mode
+  bool _isDebugMode() {
+    bool isDebug = false;
+    assert(() {
+      isDebug = true;
+      return true;
+    }());
+    return isDebug;
+  }
 
+  Widget _buildDetailView(OperatorOrderDetailModel order) {
     return RefreshIndicator(
       onRefresh: _loadOrderDetail,
       color: AppColors.maritimeBlue,
@@ -121,30 +504,99 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeaderCard(),
+            _buildHeaderCard(order),
             const SizedBox(height: 16),
-            _buildCustomerCard(),
+
+            // ⭐ PENDING STATUS WARNING
+            if (order.orderStatus == OrderStatus.pending)
+              _buildPendingWarning(),
+
+            if (order.orderStatus == OrderStatus.pending)
+              const SizedBox(height: 16),
+
+            _buildCustomerCard(order),
             const SizedBox(height: 16),
-            _buildDriverCard(),
+            _buildDriverCard(order),
             const SizedBox(height: 16),
-            _buildVehicleCard(),
+            _buildVehicleCard(order),
             const SizedBox(height: 16),
-            _buildLocationCard(),
+            _buildLocationCard(order),
             const SizedBox(height: 16),
-            _buildOrderLinesCard(),
-            const SizedBox(height: 16),
-            _buildImagesCard(),
-            const SizedBox(height: 32),
+            _buildOrderLinesCard(order),
+            if (order.orderImageList.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildImagesCard(order),
+            ],
+            const SizedBox(height: 80), // Space for FAB
           ],
         ),
       ),
     );
   }
 
-  // ==========================================
-  // HEADER CARD
-  // ==========================================
-  Widget _buildHeaderCard() {
+  // ⭐ PENDING WARNING BANNER
+  Widget _buildPendingWarning() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.orange.withOpacity(0.1),
+            Colors.deepOrange.withOpacity(0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.orange.withOpacity(0.3),
+          width: 2,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.orange,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.pending_actions,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Đơn hàng chờ xử lý',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Nhấn nút "Xác nhận đơn hàng" bên dưới để bắt đầu xử lý',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.secondaryText,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Các widget khác giữ nguyên như trong document 110
+  Widget _buildHeaderCard(OperatorOrderDetailModel order) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -187,7 +639,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: _orderDetail!.orderStatus.color.withOpacity(0.2),
+                  color: order.orderStatus.color.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: Colors.white.withOpacity(0.3),
@@ -201,13 +653,13 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: _orderDetail!.orderStatus.color,
+                        color: order.orderStatus.color,
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      _orderDetail!.orderStatus.displayName,
+                      order.orderStatus.displayName,
                       style: const TextStyle(
                         fontSize: 14,
                         color: Colors.white,
@@ -219,63 +671,12 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Divider(color: Colors.white.withOpacity(0.3)),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildHeaderInfo(
-                Icons.calendar_today,
-                'Ngày tạo',
-                DateFormatter.formatDate(_orderDetail!.orderDate),
-              ),
-              _buildHeaderInfo(
-                Icons.receipt_long,
-                'Bill Booking',
-                _orderDetail!.billBookingNo,
-              ),
-            ],
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildHeaderInfo(IconData icon, String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 16, color: Colors.white70),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ==========================================
-  // CUSTOMER CARD
-  // ==========================================
-  Widget _buildCustomerCard() {
+  Widget _buildCustomerCard(OperatorOrderDetailModel order) {
     return _buildInfoCard(
       title: 'Thông tin khách hàng',
       icon: Icons.business,
@@ -284,22 +685,19 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
         _buildInfoRow(
           icon: Icons.business,
           label: 'Tên khách hàng',
-          value: _orderDetail!.customerName,
+          value: order.customerName,
         ),
         const SizedBox(height: 12),
         _buildInfoRow(
           icon: Icons.badge,
           label: 'Mã khách hàng',
-          value: 'KH-${_orderDetail!.customerId}',
+          value: 'KH-${order.customerId}',
         ),
       ],
     );
   }
 
-  // ==========================================
-  // DRIVER CARD
-  // ==========================================
-  Widget _buildDriverCard() {
+  Widget _buildDriverCard(OperatorOrderDetailModel order) {
     return _buildInfoCard(
       title: 'Thông tin tài xế',
       icon: Icons.person,
@@ -308,26 +706,23 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
         _buildInfoRow(
           icon: Icons.person,
           label: 'Tên tài xế',
-          value: _orderDetail!.driverName.isNotEmpty
-              ? _orderDetail!.driverName
+          value: order.driverName.isNotEmpty
+              ? order.driverName
               : 'Chưa phân công',
         ),
-        if (_orderDetail!.driverId != null) ...[
+        if (order.driverId != null) ...[
           const SizedBox(height: 12),
           _buildInfoRow(
             icon: Icons.badge,
             label: 'Mã tài xế',
-            value: 'TX-${_orderDetail!.driverId}',
+            value: 'TX-${order.driverId}',
           ),
         ],
       ],
     );
   }
 
-  // ==========================================
-  // VEHICLE CARD
-  // ==========================================
-  Widget _buildVehicleCard() {
+  Widget _buildVehicleCard(OperatorOrderDetailModel order) {
     return _buildInfoCard(
       title: 'Thông tin phương tiện',
       icon: Icons.local_shipping,
@@ -339,8 +734,8 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
               child: _buildVehicleInfo(
                 icon: Icons.inventory_2,
                 label: 'Container',
-                value: _orderDetail!.containerNo,
-                type: _orderDetail!.containerType,
+                value: order.containerNo,
+                type: order.containerType,
               ),
             ),
             const SizedBox(width: 12),
@@ -348,7 +743,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
               child: _buildVehicleInfo(
                 icon: Icons.local_shipping,
                 label: 'Xe đầu kéo',
-                value: _orderDetail!.truckNo,
+                value: order.truckNo,
               ),
             ),
           ],
@@ -357,7 +752,200 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
         _buildVehicleInfo(
           icon: Icons.rv_hookup,
           label: 'Rơ moóc',
-          value: _orderDetail!.rmoocNo,
+          value: order.rmoocNo,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLocationCard(OperatorOrderDetailModel order) {
+    return _buildInfoCard(
+      title: 'Thông tin vận chuyển',
+      icon: Icons.location_on,
+      color: AppColors.statusInTransit,
+      children: [
+        _buildLocationItem(
+          icon: Icons.upload,
+          label: 'ĐIỂM LẤY HÀNG',
+          location: order.fromLocationName,
+          detail: order.fromWhereName,
+          color: AppColors.statusInTransit,
+        ),
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.arrow_downward, color: AppColors.maritimeBlue),
+            ],
+          ),
+        ),
+        _buildLocationItem(
+          icon: Icons.download,
+          label: 'ĐIỂM GIAO HÀNG',
+          location: order.toLocationName,
+          color: AppColors.statusDelivered,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOrderLinesCard(OperatorOrderDetailModel order) {
+    final lines = order.orderLineList1;
+    final totalCost = order.totalCost;
+
+    return _buildInfoCard(
+      title: 'Chi phí đơn hàng',
+      icon: Icons.receipt,
+      color: AppColors.skyBlue,
+      children: [
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: lines.length,
+          separatorBuilder: (_, __) => Divider(
+            height: 24,
+            color: AppColors.hintText.withOpacity(0.2),
+          ),
+          itemBuilder: (context, index) {
+            final line = lines[index];
+            return _buildOrderLineItem(line);
+          },
+        ),
+        Divider(
+          height: 32,
+          thickness: 2,
+          color: AppColors.maritimeBlue.withOpacity(0.2),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'TỔNG CỘNG',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryText,
+                letterSpacing: 0.5,
+              ),
+            ),
+            Text(
+              MoneyFormatter.formatSimple(totalCost),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.maritimeBlue,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImagesCard(OperatorOrderDetailModel order) {
+    final images = order.activeImages;
+
+    return _buildInfoCard(
+      title: 'Hình ảnh đơn hàng',
+      icon: Icons.photo_library,
+      color: AppColors.portGrey,
+      children: [
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.2,
+          ),
+          itemCount: images.length,
+          itemBuilder: (context, index) {
+            final image = images[index];
+            return _buildImageItem(image);
+          },
+        ),
+      ],
+    );
+  }
+
+  // Helper widgets
+  Widget _buildInfoCard({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [AppColors.cardShadow],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.secondaryText),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryText,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -426,41 +1014,6 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     );
   }
 
-  // ==========================================
-  // LOCATION CARD
-  // ==========================================
-  Widget _buildLocationCard() {
-    return _buildInfoCard(
-      title: 'Thông tin vận chuyển',
-      icon: Icons.location_on,
-      color: AppColors.statusInTransit,
-      children: [
-        _buildLocationItem(
-          icon: Icons.upload,
-          label: 'ĐIỂM LẤY HÀNG',
-          location: _orderDetail!.fromLocationName,
-          detail: _orderDetail!.fromWhereName,
-          color: AppColors.statusInTransit,
-        ),
-        Container(
-          margin: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.arrow_downward, color: AppColors.maritimeBlue),
-            ],
-          ),
-        ),
-        _buildLocationItem(
-          icon: Icons.download,
-          label: 'ĐIỂM GIAO HÀNG',
-          location: _orderDetail!.toLocationName,
-          color: AppColors.statusDelivered,
-        ),
-      ],
-    );
-  }
-
   Widget _buildLocationItem({
     required IconData icon,
     required String label,
@@ -523,62 +1076,6 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           ],
         ],
       ),
-    );
-  }
-
-  // ==========================================
-  // ORDER LINES CARD (Chi phí)
-  // ==========================================
-  Widget _buildOrderLinesCard() {
-    final lines = _orderDetail!.orderLineList1;
-    final totalCost = _orderDetail!.totalCost;
-
-    return _buildInfoCard(
-      title: 'Chi phí đơn hàng',
-      icon: Icons.receipt,
-      color: AppColors.skyBlue,
-      children: [
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: lines.length,
-          separatorBuilder: (_, __) => Divider(
-            height: 24,
-            color: AppColors.hintText.withOpacity(0.2),
-          ),
-          itemBuilder: (context, index) {
-            final line = lines[index];
-            return _buildOrderLineItem(line);
-          },
-        ),
-        Divider(
-          height: 32,
-          thickness: 2,
-          color: AppColors.maritimeBlue.withOpacity(0.2),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'TỔNG CỘNG',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primaryText,
-                letterSpacing: 0.5,
-              ),
-            ),
-            Text(
-              MoneyFormatter.formatSimple(totalCost),
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.maritimeBlue,
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 
@@ -687,40 +1184,6 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           ],
         ],
       ),
-    );
-  }
-
-  // ==========================================
-  // IMAGES CARD
-  // ==========================================
-  Widget _buildImagesCard() {
-    final images = _orderDetail!.activeImages;
-
-    if (images.isEmpty) {
-      return const SizedBox();
-    }
-
-    return _buildInfoCard(
-      title: 'Hình ảnh đơn hàng',
-      icon: Icons.photo_library,
-      color: AppColors.portGrey,
-      children: [
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.2,
-          ),
-          itemCount: images.length,
-          itemBuilder: (context, index) {
-            final image = images[index];
-            return _buildImageItem(image);
-          },
-        ),
-      ],
     );
   }
 
@@ -837,89 +1300,6 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           ],
         ),
       ),
-    );
-  }
-
-  // ==========================================
-  // HELPER WIDGETS
-  // ==========================================
-  Widget _buildInfoCard({
-    required String title,
-    required IconData icon,
-    required Color color,
-    required List<Widget> children,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [AppColors.cardShadow],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryText,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          ...children,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: AppColors.secondaryText),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.secondaryText,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primaryText,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

@@ -3,7 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
+import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
 import 'package:nalogistics_app/presentation/routes/route_names.dart';
+import 'package:provider/provider.dart';
 
 class TokenExpiredDialog extends StatelessWidget {
   final String? message;
@@ -115,7 +117,11 @@ class TokenExpiredDialog extends StatelessWidget {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: () => context.go(RouteNames.login),
+              onPressed:  () async {
+                Navigator.of(context).pop(true);
+                await AuthController().logout();
+                context.go(RouteNames.login);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.maritimeBlue,
                 shape: RoundedRectangleBorder(

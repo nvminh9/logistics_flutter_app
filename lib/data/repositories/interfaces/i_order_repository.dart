@@ -1,11 +1,10 @@
-// lib/data/repositories/interfaces/i_order_repository.dart
-
 import 'package:nalogistics_app/data/models/order/order_api_model.dart';
 import 'package:nalogistics_app/data/models/order/order_operator_model.dart';
 import 'package:nalogistics_app/data/models/order/order_detail_api_model.dart';
 import 'package:nalogistics_app/data/models/order/operator_order_detail_model.dart';
 import 'package:nalogistics_app/data/models/order/update_status_response_model.dart';
 import 'package:nalogistics_app/data/models/order/confirm_order_response_model.dart';
+import 'package:nalogistics_app/data/models/order/pending_image_model.dart';
 
 abstract class IOrderRepository {
   // ========================================
@@ -50,8 +49,13 @@ abstract class IOrderRepository {
     required int statusValue,
   });
 
-  // ⭐ NEW: Confirm pending order (chuyển Pending → InProgress)
   Future<ConfirmOrderResponse> confirmPendingOrder({
     required String orderID,
+  });
+
+  // ⭐ NEW: Upload multiple images for an order
+  Future<List<UploadImageResponse>> uploadMultipleImages({
+    required String orderID,
+    required List<Map<String, dynamic>> images, // {file: File, description: String}
   });
 }

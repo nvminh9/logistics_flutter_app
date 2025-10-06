@@ -7,6 +7,7 @@ import 'package:nalogistics_app/core/services/session_manager.dart';
 import 'package:nalogistics_app/core/exceptions/network_exception.dart';
 import 'package:nalogistics_app/data/services/local/storage_service.dart';
 import 'package:nalogistics_app/core/constants/app_constants.dart';
+import 'package:path/path.dart' as path;
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
@@ -156,6 +157,62 @@ class ApiClient {
     } catch (e) {
       print('❌ Unknown Error: $e');
       throw NetworkException('Có lỗi xảy ra: ${e.toString()}');
+    }
+  }
+
+  /// Upload file với multipart/form-data
+  /// ⚠️ Note: This is a basic implementation. Consider using Dio for better file upload support
+  Future<Map<String, dynamic>> uploadMultipart(
+      String endpoint, {
+        required File file,
+        Map<String, String>? fields,
+        bool requiresAuth = true,
+      }) async {
+    try {
+      final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
+      final headers = await _getHeaders(requiresAuth: requiresAuth);
+
+      // Remove Content-Type from headers as multipart sets its own
+      headers.remove('Content-Type');
+
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll(headers);
+
+      // Add file
+      final stream = http.ByteStream(file.openRead());
+      final length = await file.length();
+      final multipartFile = http.MultipartFile(
+        'file',
+        stream,
+        length,
+        filename: path.basename(file.path),
+      );
+      request.files.add(multipartFile);
+
+      // Add additional fields
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
+
+      print('🚀 Uploading: ${path.basename(file.path)}');
+      print('📋 Fields: $fields');
+
+      final streamedResponse = await request.send()
+          .timeout(const Duration(seconds: 60)); // Longer timeout for uploads
+
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print('📨 Upload Response Status: ${response.statusCode}');
+      print('📄 Upload Response Body: ${response.body}');
+
+      return _handleResponse(response, requiresAuth: requiresAuth);
+
+    } on SocketException catch (e) {
+      print('❌ Network Error: $e');
+      throw NetworkException('Không có kết nối internet');
+    } catch (e) {
+      print('❌ Upload Error: $e');
+      throw NetworkException('Lỗi upload file: ${e.toString()}');
     }
   }
 

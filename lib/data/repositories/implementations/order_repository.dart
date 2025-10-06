@@ -1,14 +1,16 @@
-// lib/data/repositories/implementations/order_repository.dart
-
 import 'package:nalogistics_app/data/models/order/order_api_model.dart';
 import 'package:nalogistics_app/data/models/order/order_operator_model.dart';
 import 'package:nalogistics_app/data/models/order/order_detail_api_model.dart';
 import 'package:nalogistics_app/data/models/order/operator_order_detail_model.dart';
+import 'package:nalogistics_app/data/models/order/pending_image_model.dart';
 import 'package:nalogistics_app/data/models/order/update_status_response_model.dart';
 import 'package:nalogistics_app/data/models/order/confirm_order_response_model.dart';
 import 'package:nalogistics_app/data/repositories/interfaces/i_order_repository.dart';
 import 'package:nalogistics_app/data/services/api/api_client.dart';
 import 'package:nalogistics_app/core/constants/api_constants.dart';
+import 'dart:io';
+import 'package:dio/dio.dart';
+import 'package:path/path.dart' as path;
 
 class OrderRepository implements IOrderRepository {
   final ApiClient _apiClient = ApiClient();
@@ -211,6 +213,67 @@ class OrderRepository implements IOrderRepository {
       return ConfirmOrderResponse.fromJson(response);
     } catch (e) {
       print('❌ Confirm Pending Order Error: $e');
+      rethrow;
+    }
+  }
+
+  // ========================================
+  // IMAGE UPLOAD METHODS
+  // ========================================
+
+  @override
+  Future<List<UploadImageResponse>> uploadMultipleImages({
+    required String orderID,
+    required List<Map<String, dynamic>> images,
+  }) async {
+    final results = <UploadImageResponse>[];
+
+    try {
+      print('📤 Uploading ${images.length} images for order $orderID');
+
+      for (int i = 0; i < images.length; i++) {
+        final imageData = images[i];
+        final file = imageData['file'] as File;
+        final description = imageData['description'] as String? ?? '';
+
+        try {
+          print('   Uploading image ${i + 1}/${images.length}...');
+
+          // Use ApiClient's uploadMultipart method
+          final response = await _apiClient.uploadMultipart(
+            ApiConstants.uploadOrderImage,
+            file: file,
+            fields: {
+              'orderID': orderID,
+              'description': description,
+            },
+            requiresAuth: true,
+          );
+
+          final uploadResponse = UploadImageResponse.fromJson(response);
+          results.add(uploadResponse);
+
+          print('   ✅ Image ${i + 1} uploaded: ${uploadResponse.data?.fileName}');
+
+        } catch (e) {
+          print('   ❌ Failed to upload image ${i + 1}: $e');
+
+          // Add failed response
+          results.add(UploadImageResponse(
+            statusCode: 500,
+            message: 'Upload failed: ${e.toString()}',
+            data: null,
+          ));
+        }
+      }
+
+      final successCount = results.where((r) => r.isSuccess).length;
+      print('📥 Upload complete: $successCount/${images.length} successful');
+
+      return results;
+
+    } catch (e) {
+      print('❌ Upload Multiple Images Error: $e');
       rethrow;
     }
   }

@@ -28,6 +28,13 @@ class ApiConstants {
   static const String operatorConfirmOrder = '$apiVersion/Order/updateStatusOrderForOperator';
 
   // ==========================================
+  // IMAGE UPLOAD ENDPOINTS
+  // ==========================================
+
+  /// ⚠️ TODO: Replace with actual endpoint from backend API documentation
+  static const String uploadOrderImage = '$apiVersion/Order/uploadImage';
+
+  // ==========================================
   // DEFAULT QUERY PARAMETERS
   // ==========================================
 
@@ -81,5 +88,11 @@ class ApiConstants {
   /// Example: /api/Order/updateStatusOrderForOperator?orderID=12
   static String getOperatorConfirmOrderUrl(String orderId) {
     return '$operatorConfirmOrder?orderID=$orderId';
+  }
+
+  /// Build URL for uploading image to specific order
+  /// Example: /api/Order/uploadImage?orderID=12
+  static String getUploadImageUrl(String orderId) {
+    return '$uploadOrderImage?orderID=$orderId';
   }
 }

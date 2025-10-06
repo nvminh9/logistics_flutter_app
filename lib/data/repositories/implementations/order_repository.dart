@@ -5,6 +5,7 @@ import 'package:nalogistics_app/data/models/order/order_operator_model.dart';
 import 'package:nalogistics_app/data/models/order/order_detail_api_model.dart';
 import 'package:nalogistics_app/data/models/order/operator_order_detail_model.dart';
 import 'package:nalogistics_app/data/models/order/update_status_response_model.dart';
+import 'package:nalogistics_app/data/models/order/confirm_order_response_model.dart';
 import 'package:nalogistics_app/data/repositories/interfaces/i_order_repository.dart';
 import 'package:nalogistics_app/data/services/api/api_client.dart';
 import 'package:nalogistics_app/core/constants/api_constants.dart';
@@ -113,7 +114,6 @@ class OrderRepository implements IOrderRepository {
         'pageNumber': pageNumber.toString(),
       };
 
-      // Add optional date filters
       if (fromDate != null) {
         queryParams['fromDate'] = fromDate;
       }
@@ -136,15 +136,13 @@ class OrderRepository implements IOrderRepository {
     }
   }
 
-  /// ⭐ NEW: Operator Order Detail với API khác
-  /// URI: /api/Order/detailOrder?id=12 (chú ý param là 'id' chứ không phải 'orderID')
   @override
   Future<OperatorOrderDetailResponse> getOperatorOrderDetail({
     required String orderID,
   }) async {
     try {
       final queryParams = {
-        'id': orderID, // ⭐ Operator API dùng 'id' thay vì 'orderID'
+        'id': orderID,
       };
 
       print('📤 Operator fetching order detail: id=$orderID');
@@ -186,6 +184,33 @@ class OrderRepository implements IOrderRepository {
       return UpdateStatusResponse.fromJson(response);
     } catch (e) {
       print('❌ Update Operator Order Status Error: $e');
+      rethrow;
+    }
+  }
+
+  // ⭐ NEW: Confirm pending order (Operator only)
+  @override
+  Future<ConfirmOrderResponse> confirmPendingOrder({
+    required String orderID,
+  }) async {
+    try {
+      final queryParams = {
+        'orderID': orderID,
+      };
+
+      print('📤 Operator confirming pending order: orderID=$orderID');
+
+      final response = await _apiClient.put(
+        ApiConstants.operatorConfirmOrder,
+        queryParams: queryParams,
+        requiresAuth: true,
+      );
+
+      print('📥 Confirm order response: ${response['statusCode']} - ${response['message']}');
+
+      return ConfirmOrderResponse.fromJson(response);
+    } catch (e) {
+      print('❌ Confirm Pending Order Error: $e');
       rethrow;
     }
   }

@@ -1,11 +1,10 @@
-// lib/presentation/routes/app_routes.dart
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nalogistics_app/presentation/pages/splash/api_splash_page.dart';
 import 'package:nalogistics_app/presentation/pages/auth/api_login_page.dart';
 import 'package:nalogistics_app/presentation/pages/main/role_based_main_navigation.dart';
 import 'package:nalogistics_app/presentation/pages/orders/order_detail_page.dart';
+import 'package:nalogistics_app/presentation/pages/orders/operator_order_detail_page.dart';
 import 'package:nalogistics_app/presentation/routes/route_names.dart';
 import 'package:nalogistics_app/main.dart';
 
@@ -25,18 +24,29 @@ class AppRoutes {
         name: 'login',
         builder: (context, state) => const ApiLoginPage(),
       ),
-      // ⭐ Updated to use Role-based Navigation
       GoRoute(
         path: RouteNames.main,
         name: 'main',
         builder: (context, state) => const RoleBasedMainNavigation(),
       ),
+
+      // ⭐ Driver Order Detail (API cũ)
       GoRoute(
         path: '${RouteNames.orderDetail}/:orderID',
         name: 'orderDetail',
         builder: (context, state) {
           final orderID = state.pathParameters['orderID']!;
           return OrderDetailPage(orderID: orderID);
+        },
+      ),
+
+      // ⭐ NEW: Operator Order Detail (API mới với full data)
+      GoRoute(
+        path: '/operator-order-detail/:orderID',
+        name: 'operatorOrderDetail',
+        builder: (context, state) {
+          final orderID = state.pathParameters['orderID']!;
+          return OperatorOrderDetailPage(orderID: orderID);
         },
       ),
     ],

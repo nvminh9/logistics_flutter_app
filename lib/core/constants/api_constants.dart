@@ -21,11 +21,11 @@ class ApiConstants {
   // OPERATOR ROLE ENDPOINTS
   // ==========================================
   static const String operatorOrders = '$apiVersion/Order/listOrder';
-
-  /// ⭐ NEW: Operator order detail với query param 'id'
   static const String operatorOrderDetail = '$apiVersion/Order/detailOrder';
-
   static const String operatorUpdateStatus = '$apiVersion/Order/updateStatusOrder';
+
+  // ⭐ NEW: Operator confirm pending order (chuyển từ Pending → InProgress)
+  static const String operatorConfirmOrder = '$apiVersion/Order/updateStatusOrderForOperator';
 
   // ==========================================
   // DEFAULT QUERY PARAMETERS
@@ -75,5 +75,11 @@ class ApiConstants {
   /// Example: /api/DriverRole/detailOrderForDriver?orderID=12
   static String getDriverOrderDetailUrl(String orderId) {
     return '$driverOrderDetail?orderID=$orderId';
+  }
+
+  /// ⭐ Build URL cho Operator confirm order
+  /// Example: /api/Order/updateStatusOrderForOperator?orderID=12
+  static String getOperatorConfirmOrderUrl(String orderId) {
+    return '$operatorConfirmOrder?orderID=$orderId';
   }
 }

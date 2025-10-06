@@ -1,8 +1,8 @@
-// lib/presentation/controllers/operator_order_detail_controller.dart
-
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:nalogistics_app/core/base/base_controller.dart';
 import 'package:nalogistics_app/data/models/order/operator_order_detail_model.dart';
+import 'package:nalogistics_app/data/models/order/pending_image_model.dart';
 import 'package:nalogistics_app/data/repositories/implementations/order_repository.dart';
 import 'package:nalogistics_app/domain/usecases/order/get_operator_order_detail_usecase.dart';
 import 'package:nalogistics_app/domain/usecases/order/confirm_pending_order_usecase.dart';
@@ -185,6 +185,158 @@ class OperatorOrderDetailController extends BaseController {
         }
       }
     }
+  }
+
+  // Thêm vào OperatorOrderDetailController class
+
+// ============================================
+// IMAGE UPLOAD STATE & METHODS
+// ============================================
+
+  List<PendingImageModel> _pendingImages = [];
+  bool _isUploadingImages = false;
+  int _uploadProgress = 0;
+  int _totalImagesToUpload = 0;
+
+  List<PendingImageModel> get pendingImages => _pendingImages;
+  bool get isUploadingImages => _isUploadingImages;
+  int get uploadProgress => _uploadProgress;
+  int get totalImagesToUpload => _totalImagesToUpload;
+
+  double get uploadPercentage {
+    if (_totalImagesToUpload == 0) return 0;
+    return (_uploadProgress / _totalImagesToUpload) * 100;
+  }
+
+  /// Thêm ảnh vào danh sách pending
+  void addPendingImage(File imageFile, {String description = ''}) {
+    final pendingImage = PendingImageModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      imageFile: imageFile,
+      description: description,
+      createdAt: DateTime.now(),
+    );
+
+    _pendingImages.add(pendingImage);
+    notifyListeners();
+
+    print('✅ Added pending image: ${pendingImage.id}');
+    print('   Total pending: ${_pendingImages.length}');
+  }
+
+  /// Thêm nhiều ảnh
+  void addMultiplePendingImages(List<File> imageFiles) {
+    for (final file in imageFiles) {
+      addPendingImage(file);
+    }
+  }
+
+  /// Update description của ảnh pending
+  void updatePendingImageDescription(String imageId, String description) {
+    final index = _pendingImages.indexWhere((img) => img.id == imageId);
+    if (index != -1) {
+      _pendingImages[index] = _pendingImages[index].copyWith(
+        description: description,
+      );
+      notifyListeners();
+      print('✅ Updated description for image: $imageId');
+    }
+  }
+
+  /// Xóa ảnh pending
+  void removePendingImage(String imageId) {
+    _pendingImages.removeWhere((img) => img.id == imageId);
+    notifyListeners();
+    print('✅ Removed pending image: $imageId');
+    print('   Remaining: ${_pendingImages.length}');
+  }
+
+  /// Clear all pending images
+  void clearPendingImages() {
+    _pendingImages.clear();
+    notifyListeners();
+    print('✅ Cleared all pending images');
+  }
+
+  /// Upload tất cả pending images
+  Future<bool> uploadAllPendingImages() async {
+    if (_pendingImages.isEmpty) {
+      print('⚠️ No pending images to upload');
+      return false;
+    }
+
+    if (_currentOrderID == null) {
+      setError('Không có thông tin đơn hàng');
+      return false;
+    }
+
+    try {
+      _isUploadingImages = true;
+      _uploadProgress = 0;
+      _totalImagesToUpload = _pendingImages.length;
+      clearError();
+      notifyListeners();
+
+      print('📤 Starting upload of ${_pendingImages.length} images...');
+
+      // Prepare data for upload
+      final imagesToUpload = _pendingImages.map((img) => {
+        'file': img.imageFile,
+        'description': img.description.isEmpty
+            ? 'Ảnh đơn hàng ${DateTime.now().toString().split('.')[0]}'
+            : img.description,
+      }).toList();
+
+      // Upload
+      final results = await _orderRepository.uploadMultipleImages(
+        orderID: _currentOrderID!,
+        images: imagesToUpload,
+      );
+
+      // Update progress
+      _uploadProgress = results.length;
+      notifyListeners();
+
+      print('✅ Upload completed: ${results.length}/${_pendingImages.length} successful');
+
+      // Check results
+      final successCount = results.where((r) => r.isSuccess).length;
+      final failCount = results.length - successCount;
+
+      if (failCount > 0) {
+        print('⚠️ Some uploads failed: $failCount images');
+      }
+
+      // Clear pending images after successful upload
+      clearPendingImages();
+
+      _isUploadingImages = false;
+      _uploadProgress = 0;
+      _totalImagesToUpload = 0;
+      notifyListeners();
+
+      return successCount > 0;
+
+    } catch (e) {
+      print('❌ Upload Images Error: $e');
+      setError('Lỗi upload ảnh: ${e.toString()}');
+
+      _isUploadingImages = false;
+      _uploadProgress = 0;
+      _totalImagesToUpload = 0;
+      notifyListeners();
+
+      return false;
+    }
+  }
+
+  /// Get total size của tất cả pending images
+  Future<double> getTotalPendingImagesSizeMB() async {
+    double totalSize = 0;
+    for (final img in _pendingImages) {
+      totalSize += await img.getFileSizeMB();
+    }
+    return totalSize;
   }
 
   /// Clear order detail

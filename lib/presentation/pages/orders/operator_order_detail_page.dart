@@ -1,5 +1,3 @@
-// lib/presentation/pages/orders/operator_order_detail_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -10,6 +8,7 @@ import 'package:nalogistics_app/data/models/order/operator_order_detail_model.da
 import 'package:nalogistics_app/presentation/controllers/operator_order_detail_controller.dart';
 import 'package:nalogistics_app/presentation/widgets/common/app_bar_widget.dart';
 import 'package:nalogistics_app/shared/enums/order_status_enum.dart';
+import 'package:nalogistics_app/presentation/widgets/order/add_images_section.dart';
 
 class OperatorOrderDetailPage extends StatefulWidget {
   final String orderID;
@@ -507,7 +506,6 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             _buildHeaderCard(order),
             const SizedBox(height: 16),
 
-            // ⭐ PENDING STATUS WARNING
             if (order.orderStatus == OrderStatus.pending)
               _buildPendingWarning(),
 
@@ -523,10 +521,17 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             _buildLocationCard(order),
             const SizedBox(height: 16),
             _buildOrderLinesCard(order),
+
+            // ⭐ THÊM SECTION MỚI - Add Images Section
+            const SizedBox(height: 16),
+            const AddImagesSection(), // Widget mới
+
+            // Existing images
             if (order.orderImageList.isNotEmpty) ...[
               const SizedBox(height: 16),
               _buildImagesCard(order),
             ],
+
             const SizedBox(height: 80), // Space for FAB
           ],
         ),
@@ -847,8 +852,8 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     final images = order.activeImages;
 
     return _buildInfoCard(
-      title: 'Hình ảnh đơn hàng',
-      icon: Icons.photo_library,
+      title: 'Hình ảnh đã upload', // ⭐ Changed title
+      icon: Icons.photo_library,  // ⭐ Changed icon
       color: AppColors.portGrey,
       children: [
         GridView.builder(

@@ -519,8 +519,8 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             _buildVehicleCard(order),
             const SizedBox(height: 16),
             _buildLocationCard(order),
-            const SizedBox(height: 16),
-            _buildOrderLinesCard(order),
+            // const SizedBox(height: 16),
+            // _buildOrderLinesCard(order),
 
             // ⭐ THÊM SECTION MỚI - Add Images Section
             const SizedBox(height: 16),
@@ -585,7 +585,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Nhấn nút "Xác nhận đơn hàng" bên dưới để bắt đầu xử lý',
+                  'Nhấn nút "Xác nhận đơn hàng" bên dưới để chuyển sang trạng thái "Đang xử lý"',
                   style: TextStyle(
                     fontSize: 13,
                     color: AppColors.secondaryText,
@@ -600,7 +600,6 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     );
   }
 
-  // Các widget khác giữ nguyên như trong document 110
   Widget _buildHeaderCard(OperatorOrderDetailModel order) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -676,6 +675,90 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
               ),
             ],
           ),
+
+          // ⭐ THÊM THÔNG TIN NGÀY ĐẶT VÀ BILL BOOKING
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      color: Colors.white.withOpacity(0.9),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'NGÀY GIAO HÀNG',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    DateFormatter.formatDate(order.orderDate),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+
+                if (order.billBookingNo.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.receipt_long,
+                        color: Colors.white.withOpacity(0.9),
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'SỐ BILL/BOOKING',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      order.billBookingNo,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -733,26 +816,11 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
       icon: Icons.local_shipping,
       color: AppColors.containerOrange,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildVehicleInfo(
-                icon: Icons.inventory_2,
-                label: 'Container',
-                value: order.containerNo,
-                type: order.containerType,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildVehicleInfo(
-                icon: Icons.local_shipping,
-                label: 'Biển số xe',
-                value: order.truckNo,
-                id: order.truckId.toString(),
-              ),
-            ),
-          ],
+        _buildVehicleInfo(
+          icon: Icons.local_shipping,
+          label: 'Biển số xe',
+          value: order.truckNo,
+          id: order.truckId.toString(),
         ),
         const SizedBox(height: 12),
         _buildVehicleInfo(
@@ -761,12 +829,6 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           value: order.rmoocNo,
           id: order.rmoocId.toString(),
         ),
-        // const SizedBox(height: 12),
-        // _buildVehicleInfo(
-        //   icon: Icons.rv_hookup,
-        //   label: 'Mã hóa đơn',
-        //   value: order.billBookingNo,
-        // ),
       ],
     );
   }

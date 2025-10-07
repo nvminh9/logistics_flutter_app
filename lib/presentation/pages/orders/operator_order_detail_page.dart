@@ -696,7 +696,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
         _buildInfoRow(
           icon: Icons.badge,
           label: 'Mã khách hàng',
-          value: 'KH-${order.customerId}',
+          value: '${order.customerId}',
         ),
       ],
     );
@@ -720,7 +720,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           _buildInfoRow(
             icon: Icons.badge,
             label: 'Mã tài xế',
-            value: 'TX-${order.driverId}',
+            value: '${order.driverId}',
           ),
         ],
       ],
@@ -747,8 +747,9 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             Expanded(
               child: _buildVehicleInfo(
                 icon: Icons.local_shipping,
-                label: 'Xe đầu kéo',
+                label: 'Biển số xe',
                 value: order.truckNo,
+                id: order.truckId.toString(),
               ),
             ),
           ],
@@ -758,7 +759,14 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           icon: Icons.rv_hookup,
           label: 'Rơ moóc',
           value: order.rmoocNo,
+          id: order.rmoocId.toString(),
         ),
+        // const SizedBox(height: 12),
+        // _buildVehicleInfo(
+        //   icon: Icons.rv_hookup,
+        //   label: 'Mã hóa đơn',
+        //   value: order.billBookingNo,
+        // ),
       ],
     );
   }
@@ -852,7 +860,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     final images = order.activeImages;
 
     return _buildInfoCard(
-      title: 'Hình ảnh đã upload', // ⭐ Changed title
+      title: 'Hình ảnh đã tải lên', // ⭐ Changed title
       icon: Icons.photo_library,  // ⭐ Changed icon
       color: AppColors.portGrey,
       children: [
@@ -961,6 +969,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     required String label,
     required String value,
     String? type,
+    String? id,
   }) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1006,6 +1015,24 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
               ),
               child: Text(
                 'Loại: $type',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.containerOrange,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+          if (id != null) ...[
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.containerOrange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'ID: $id',
                 style: TextStyle(
                   fontSize: 11,
                   color: AppColors.containerOrange,

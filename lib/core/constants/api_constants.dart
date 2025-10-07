@@ -23,16 +23,14 @@ class ApiConstants {
   static const String operatorOrders = '$apiVersion/Order/listOrder';
   static const String operatorOrderDetail = '$apiVersion/Order/detailOrder';
   static const String operatorUpdateStatus = '$apiVersion/Order/updateStatusOrder';
-
-  // ⭐ NEW: Operator confirm pending order (chuyển từ Pending → InProgress)
   static const String operatorConfirmOrder = '$apiVersion/Order/updateStatusOrderForOperator';
 
   // ==========================================
   // IMAGE UPLOAD ENDPOINTS
   // ==========================================
 
-  /// ⚠️ TODO: Replace with actual endpoint from backend API documentation
-  static const String uploadOrderImage = '$apiVersion/Order/uploadImage';
+  /// ⭐ UPDATED: New image upload endpoint
+  static const String uploadOrderImage = '$apiVersion/Image/createImageAndUpload';
 
   // ==========================================
   // DEFAULT QUERY PARAMETERS
@@ -73,26 +71,17 @@ class ApiConstants {
   // ==========================================
 
   /// Build full URL cho Operator order detail
-  /// Example: /api/Order/detailOrder?id=12
   static String getOperatorOrderDetailUrl(String orderId) {
     return '$operatorOrderDetail?id=$orderId';
   }
 
   /// Build full URL cho Driver order detail
-  /// Example: /api/DriverRole/detailOrderForDriver?orderID=12
   static String getDriverOrderDetailUrl(String orderId) {
     return '$driverOrderDetail?orderID=$orderId';
   }
 
-  /// ⭐ Build URL cho Operator confirm order
-  /// Example: /api/Order/updateStatusOrderForOperator?orderID=12
+  /// Build URL cho Operator confirm order
   static String getOperatorConfirmOrderUrl(String orderId) {
     return '$operatorConfirmOrder?orderID=$orderId';
-  }
-
-  /// Build URL for uploading image to specific order
-  /// Example: /api/Order/uploadImage?orderID=12
-  static String getUploadImageUrl(String orderId) {
-    return '$uploadOrderImage?orderID=$orderId';
   }
 }

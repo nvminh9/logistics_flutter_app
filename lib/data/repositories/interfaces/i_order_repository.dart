@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:nalogistics_app/data/models/order/order_api_model.dart';
 import 'package:nalogistics_app/data/models/order/order_operator_model.dart';
 import 'package:nalogistics_app/data/models/order/order_detail_api_model.dart';
@@ -53,9 +54,21 @@ abstract class IOrderRepository {
     required String orderID,
   });
 
-  // ⭐ NEW: Upload multiple images for an order
+  // ========================================
+  // IMAGE UPLOAD METHODS
+  // ========================================
+
+  /// ⭐ NEW: Upload single image
+  Future<UploadImageResponse> uploadSingleImage({
+    required String orderID,
+    required File imageFile,
+    required String description,
+  });
+
+  /// ⭐ UPDATED: Upload multiple images (uploads one by one)
   Future<List<UploadImageResponse>> uploadMultipleImages({
     required String orderID,
     required List<Map<String, dynamic>> images, // {file: File, description: String}
+    Function(int current, int total)? onProgress, // Progress callback
   });
 }

@@ -190,7 +190,6 @@ class OrderRepository implements IOrderRepository {
     }
   }
 
-  // ⭐ NEW: Confirm pending order (Operator only)
   @override
   Future<ConfirmOrderResponse> confirmPendingOrder({
     required String orderID,
@@ -221,15 +220,56 @@ class OrderRepository implements IOrderRepository {
   // IMAGE UPLOAD METHODS
   // ========================================
 
+  /// ⭐ NEW: Upload single image
+  @override
+  Future<UploadImageResponse> uploadSingleImage({
+    required String orderID,
+    required File imageFile,
+    required String description,
+  }) async {
+    try {
+      print('📤 Uploading single image for order $orderID');
+      print('   File: ${path.basename(imageFile.path)}');
+      print('   Description: $description');
+
+      // Use ApiClient's uploadMultipart method
+      final response = await _apiClient.uploadMultipart(
+        ApiConstants.uploadOrderImage,
+        file: imageFile,
+        fields: {
+          'OrderID': orderID,
+          'Descrip': description.isEmpty ? 'Không có ghi chú' : description,
+        },
+        requiresAuth: true,
+      );
+
+      final uploadResponse = UploadImageResponse.fromJson(response);
+
+      if (uploadResponse.isSuccess) {
+        print('   ✅ Image uploaded successfully: ${uploadResponse.data?.fileName}');
+      } else {
+        print('   ❌ Upload failed: ${uploadResponse.message}');
+      }
+
+      return uploadResponse;
+
+    } catch (e) {
+      print('❌ Upload Single Image Error: $e');
+      rethrow;
+    }
+  }
+
+  /// ⭐ UPDATED: Upload multiple images one by one
   @override
   Future<List<UploadImageResponse>> uploadMultipleImages({
     required String orderID,
     required List<Map<String, dynamic>> images,
+    Function(int current, int total)? onProgress,
   }) async {
     final results = <UploadImageResponse>[];
 
     try {
-      print('📤 Uploading ${images.length} images for order $orderID');
+      print('📤 Starting batch upload: ${images.length} images for order $orderID');
 
       for (int i = 0; i < images.length; i++) {
         final imageData = images[i];
@@ -237,23 +277,24 @@ class OrderRepository implements IOrderRepository {
         final description = imageData['description'] as String? ?? '';
 
         try {
-          print('   Uploading image ${i + 1}/${images.length}...');
+          print('   📸 Uploading image ${i + 1}/${images.length}...');
 
-          // Use ApiClient's uploadMultipart method
-          final response = await _apiClient.uploadMultipart(
-            ApiConstants.uploadOrderImage,
-            file: file,
-            fields: {
-              'orderID': orderID,
-              'description': description,
-            },
-            requiresAuth: true,
+          // Call progress callback BEFORE upload
+          onProgress?.call(i, images.length);
+
+          // Upload single image
+          final uploadResponse = await uploadSingleImage(
+            orderID: orderID,
+            imageFile: file,
+            description: description,
           );
 
-          final uploadResponse = UploadImageResponse.fromJson(response);
           results.add(uploadResponse);
 
-          print('   ✅ Image ${i + 1} uploaded: ${uploadResponse.data?.fileName}');
+          // Call progress callback AFTER successful upload
+          if (uploadResponse.isSuccess) {
+            onProgress?.call(i + 1, images.length);
+          }
 
         } catch (e) {
           print('   ❌ Failed to upload image ${i + 1}: $e');
@@ -265,10 +306,21 @@ class OrderRepository implements IOrderRepository {
             data: null,
           ));
         }
+
+        // Small delay between uploads to avoid overwhelming the server
+        if (i < images.length - 1) {
+          await Future.delayed(const Duration(milliseconds: 300));
+        }
       }
 
       final successCount = results.where((r) => r.isSuccess).length;
-      print('📥 Upload complete: $successCount/${images.length} successful');
+      final failCount = results.length - successCount;
+
+      print('📥 Batch upload complete:');
+      print('   ✅ Success: $successCount/${images.length}');
+      if (failCount > 0) {
+        print('   ❌ Failed: $failCount/${images.length}');
+      }
 
       return results;
 

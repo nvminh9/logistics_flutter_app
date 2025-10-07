@@ -775,12 +775,12 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           label: 'Tên khách hàng',
           value: order.customerName,
         ),
-        const SizedBox(height: 12),
-        _buildInfoRow(
-          icon: Icons.badge,
-          label: 'Mã khách hàng',
-          value: '${order.customerId}',
-        ),
+        // const SizedBox(height: 12),
+        // _buildInfoRow(
+        //   icon: Icons.badge,
+        //   label: 'Mã khách hàng',
+        //   value: '${order.customerId}',
+        // ),
       ],
     );
   }
@@ -798,14 +798,14 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
               ? order.driverName
               : 'Chưa phân công',
         ),
-        if (order.driverId != null) ...[
-          const SizedBox(height: 12),
-          _buildInfoRow(
-            icon: Icons.badge,
-            label: 'Mã tài xế',
-            value: '${order.driverId}',
-          ),
-        ],
+        // if (order.driverId != null) ...[
+        //   const SizedBox(height: 12),
+        //   _buildInfoRow(
+        //     icon: Icons.badge,
+        //     label: 'Mã tài xế',
+        //     value: '${order.driverId}',
+        //   ),
+        // ],
       ],
     );
   }
@@ -820,14 +820,14 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           icon: Icons.local_shipping,
           label: 'Biển số xe',
           value: order.truckNo,
-          id: order.truckId.toString(),
+          // id: order.truckId.toString(),
         ),
         const SizedBox(height: 12),
         _buildVehicleInfo(
           icon: Icons.rv_hookup,
           label: 'Rơ moóc',
           value: order.rmoocNo,
-          id: order.rmoocId.toString(),
+          // id: order.rmoocId.toString(),
         ),
       ],
     );

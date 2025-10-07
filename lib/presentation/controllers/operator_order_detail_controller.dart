@@ -258,7 +258,7 @@ class OperatorOrderDetailController extends BaseController {
     print('✅ Cleared all pending images');
   }
 
-  /// Upload tất cả pending images
+  /// UPDATED: Upload tất cả pending images với progress tracking
   Future<bool> uploadAllPendingImages() async {
     if (_pendingImages.isEmpty) {
       print('⚠️ No pending images to upload');
@@ -287,17 +287,17 @@ class OperatorOrderDetailController extends BaseController {
             : img.description,
       }).toList();
 
-      // Upload
+      // Upload with progress callback
       final results = await _orderRepository.uploadMultipleImages(
         orderID: _currentOrderID!,
         images: imagesToUpload,
+        onProgress: (current, total) {
+          _uploadProgress = current;
+          notifyListeners(); // Update UI with progress
+        },
       );
 
-      // Update progress
-      _uploadProgress = results.length;
-      notifyListeners();
-
-      print('✅ Upload completed: ${results.length}/${_pendingImages.length} successful');
+      print('✅ Upload completed: ${results.length}/${_pendingImages.length}');
 
       // Check results
       final successCount = results.where((r) => r.isSuccess).length;
@@ -305,10 +305,18 @@ class OperatorOrderDetailController extends BaseController {
 
       if (failCount > 0) {
         print('⚠️ Some uploads failed: $failCount images');
+        setError('Một số ảnh upload thất bại: $failCount/$_totalImagesToUpload');
       }
 
-      // Clear pending images after successful upload
-      clearPendingImages();
+      // Clear pending images only for successful uploads
+      if (successCount > 0) {
+        // Remove successfully uploaded images
+        for (int i = results.length - 1; i >= 0; i--) {
+          if (results[i].isSuccess && i < _pendingImages.length) {
+            _pendingImages.removeAt(i);
+          }
+        }
+      }
 
       _isUploadingImages = false;
       _uploadProgress = 0;
@@ -326,6 +334,45 @@ class OperatorOrderDetailController extends BaseController {
       _totalImagesToUpload = 0;
       notifyListeners();
 
+      return false;
+    }
+  }
+
+  /// NEW: Upload single image (for immediate upload)
+  Future<bool> uploadSingleImage(PendingImageModel pendingImage) async {
+    if (_currentOrderID == null) {
+      setError('Không có thông tin đơn hàng');
+      return false;
+    }
+
+    try {
+      print('📤 Uploading single image...');
+
+      final response = await _orderRepository.uploadSingleImage(
+        orderID: _currentOrderID!,
+        imageFile: pendingImage.imageFile,
+        description: pendingImage.description.isEmpty
+            ? 'Ảnh đơn hàng'
+            : pendingImage.description,
+      );
+
+      if (response.isSuccess) {
+        print('✅ Image uploaded successfully');
+
+        // Remove from pending list
+        _pendingImages.removeWhere((img) => img.id == pendingImage.id);
+        notifyListeners();
+
+        return true;
+      } else {
+        print('❌ Upload failed: ${response.message}');
+        setError(response.message);
+        return false;
+      }
+
+    } catch (e) {
+      print('❌ Upload Single Image Error: $e');
+      setError('Lỗi upload ảnh: ${e.toString()}');
       return false;
     }
   }

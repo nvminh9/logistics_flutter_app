@@ -26,57 +26,10 @@ class AddImagesSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.containerOrange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.add_photo_alternate,
-                      color: AppColors.containerOrange,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'Thêm hình ảnh',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryText,
-                      ),
-                    ),
-                  ),
-                  if (hasPendingImages) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.containerOrange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${controller.pendingImages.length} ảnh',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.containerOrange,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-
+              _buildHeader(controller),
               const SizedBox(height: 20),
 
-              // Action Buttons
+              // Content
               if (!hasPendingImages) ...[
                 _buildEmptyState(context, controller),
               ] else ...[
@@ -88,6 +41,58 @@ class AddImagesSection extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildHeader(OperatorOrderDetailController controller) {
+    final hasPendingImages = controller.pendingImages.isNotEmpty;
+
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.containerOrange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(
+            Icons.add_photo_alternate,
+            color: AppColors.containerOrange,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(
+          child: Text(
+            'Thêm hình ảnh',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryText,
+            ),
+          ),
+        ),
+        if (hasPendingImages) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 6,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.containerOrange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '${controller.pendingImages.length} ảnh',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.containerOrange,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -195,29 +200,24 @@ class AddImagesSection extends StatelessWidget {
   }
 
   Widget _buildPendingImagesList(BuildContext context, OperatorOrderDetailController controller) {
-    return Column(
-      children: [
-        // Grid of pending images
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1,
-          ),
-          itemCount: controller.pendingImages.length + 1, // +1 for add button
-          itemBuilder: (context, index) {
-            if (index == controller.pendingImages.length) {
-              return _buildAddMoreButton(context, controller);
-            }
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1,
+      ),
+      itemCount: controller.pendingImages.length + 1,
+      itemBuilder: (context, index) {
+        if (index == controller.pendingImages.length) {
+          return _buildAddMoreButton(context, controller);
+        }
 
-            final image = controller.pendingImages[index];
-            return _buildPendingImageItem(context, controller, image);
-          },
-        ),
-      ],
+        final image = controller.pendingImages[index];
+        return _buildPendingImageItem(context, controller, image);
+      },
     );
   }
 
@@ -230,7 +230,6 @@ class AddImagesSection extends StatelessWidget {
       onTap: () => _showImagePreviewDialog(context, controller, image),
       child: Stack(
         children: [
-          // Image
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
@@ -250,7 +249,6 @@ class AddImagesSection extends StatelessWidget {
             ),
           ),
 
-          // Description badge
           if (image.description.isNotEmpty)
             Positioned(
               bottom: 4,
@@ -275,7 +273,6 @@ class AddImagesSection extends StatelessWidget {
               ),
             ),
 
-          // Delete button
           Positioned(
             top: 4,
             right: 4,
@@ -317,7 +314,6 @@ class AddImagesSection extends StatelessWidget {
           border: Border.all(
             color: AppColors.maritimeBlue.withOpacity(0.3),
             width: 2,
-            style: BorderStyle.solid,
           ),
         ),
         child: Column(
@@ -345,50 +341,77 @@ class AddImagesSection extends StatelessWidget {
 
   Widget _buildUploadButton(BuildContext context, OperatorOrderDetailController controller) {
     final isUploading = controller.isUploadingImages;
-    final progress = controller.uploadPercentage;
+    final current = controller.uploadProgress;
+    final total = controller.totalImagesToUpload;
+    final percentage = controller.uploadPercentage;
 
     return Column(
       children: [
         if (isUploading) ...[
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppColors.statusInTransit.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.statusInTransit.withOpacity(0.3),
+              ),
             ),
             child: Column(
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Đang upload...',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.statusInTransit,
-                      ),
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.statusInTransit,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Đang tải lên...',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.statusInTransit,
+                          ),
+                        ),
+                      ],
                     ),
                     Text(
-                      '${controller.uploadProgress}/${controller.totalImagesToUpload}',
+                      '$current/$total',
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: AppColors.statusInTransit,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(6),
                   child: LinearProgressIndicator(
-                    value: progress / 100,
+                    value: percentage / 100,
                     backgroundColor: AppColors.hintText.withOpacity(0.2),
                     valueColor: const AlwaysStoppedAnimation<Color>(
                       AppColors.statusInTransit,
                     ),
-                    minHeight: 8,
+                    minHeight: 10,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${percentage.toStringAsFixed(0)}% hoàn thành',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.statusInTransit,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -399,7 +422,7 @@ class AddImagesSection extends StatelessWidget {
 
         SizedBox(
           width: double.infinity,
-          height: 50,
+          height: 52,
           child: ElevatedButton.icon(
             onPressed: isUploading ? null : () => _handleUploadImages(context, controller),
             style: ElevatedButton.styleFrom(
@@ -413,11 +436,12 @@ class AddImagesSection extends StatelessWidget {
             icon: Icon(
               isUploading ? Icons.hourglass_empty : Icons.cloud_upload,
               color: Colors.white,
+              size: 22,
             ),
             label: Text(
               isUploading
-                  ? 'Đang upload...'
-                  : 'Upload ${controller.pendingImages.length} ảnh',
+                  ? 'Đang tải lên ($current/$total)...'
+                  : 'Tải lên ${controller.pendingImages.length} ảnh',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -450,11 +474,8 @@ class AddImagesSection extends StatelessWidget {
       imageFile = await imageService.showImageSourceDialog(context);
     }
 
-    if (imageFile != null) {
-      // Show dialog to add description
-      if (context.mounted) {
-        _showAddDescriptionDialog(context, controller, imageFile);
-      }
+    if (imageFile != null && context.mounted) {
+      _showAddDescriptionDialog(context, controller, imageFile);
     }
   }
 
@@ -478,7 +499,6 @@ class AddImagesSection extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Image preview
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.file(
@@ -546,7 +566,6 @@ class AddImagesSection extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Image
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.file(
@@ -556,7 +575,6 @@ class AddImagesSection extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Controls
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -604,7 +622,7 @@ class AddImagesSection extends StatelessWidget {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.maritimeBlue,
                             ),
-                            child: const Text('Lưu', style: TextStyle(color: Colors.white)),
+                            child: const Text('Thay đổi', style: TextStyle(color: Colors.white)),
                           ),
                         ),
                       ],
@@ -654,26 +672,85 @@ class AddImagesSection extends StatelessWidget {
       BuildContext context,
       OperatorOrderDetailController controller,
       ) async {
-    // Confirm upload
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Xác nhận upload'),
-        content: Text(
-          'Bạn có chắc muốn upload ${controller.pendingImages.length} ảnh?',
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.containerOrange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.cloud_upload,
+                color: AppColors.containerOrange,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Xác nhận tải lên',
+                style: TextStyle(fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Bạn có chắc muốn tải lên ${controller.pendingImages.length} ảnh?',
+              style: const TextStyle(fontSize: 15),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.statusInTransit.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.statusInTransit.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 18,
+                    color: AppColors.statusInTransit,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Các ảnh sẽ được tải lên lần lượt từng ảnh một',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.statusInTransit,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Hủy'),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.containerOrange,
             ),
-            child: const Text('Upload', style: TextStyle(color: Colors.white)),
+            icon: const Icon(Icons.cloud_upload, size: 18),
+            label: const Text('Tải lên', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -681,7 +758,6 @@ class AddImagesSection extends StatelessWidget {
 
     if (confirmed != true) return;
 
-    // Upload
     final success = await controller.uploadAllPendingImages();
 
     if (!context.mounted) return;
@@ -689,36 +765,60 @@ class AddImagesSection extends StatelessWidget {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Row(
+          content: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 12),
-              Expanded(child: Text('Upload ảnh thành công!')),
+              const Icon(Icons.check_circle, color: Colors.white, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Tải lên thành công!',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Đã tải lên ${controller.pendingImages.length} ảnh',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
           backgroundColor: AppColors.statusDelivered,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 3),
+          padding: const EdgeInsets.all(16),
         ),
       );
 
-      // Reload order detail to show new images
       await controller.reloadOrderDetail();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.error, color: Colors.white),
+              const Icon(Icons.error, color: Colors.white, size: 24),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(controller.errorMessage ?? 'Upload thất bại'),
+                child: Text(
+                  controller.errorMessage ?? 'Tải lên thất bại',
+                  style: const TextStyle(fontSize: 14),
+                ),
               ),
             ],
           ),
           backgroundColor: AppColors.statusError,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 4),
         ),
       );
     }

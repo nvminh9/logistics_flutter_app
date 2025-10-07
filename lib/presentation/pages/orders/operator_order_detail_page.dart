@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nalogistics_app/presentation/widgets/dialogs/driver_selection_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
@@ -33,7 +34,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     await _controller.loadOrderDetail(widget.orderID);
   }
 
-  // ⭐ XỬ LÝ XÁC NHẬN ĐỖN HÀNG PENDING
+  // XỬ LÝ XÁC NHẬN ĐƠN HÀNG PENDING
   Future<void> _handleConfirmOrder() async {
     final order = _controller.orderDetail;
     if (order == null) return;
@@ -786,27 +787,175 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
   }
 
   Widget _buildDriverCard(OperatorOrderDetailModel order) {
+    final hasDriver = order.driverId != null && order.driverName.isNotEmpty;
+
     return _buildInfoCard(
       title: 'Thông tin tài xế',
       icon: Icons.person,
       color: AppColors.oceanTeal,
       children: [
-        _buildInfoRow(
-          icon: Icons.person,
-          label: 'Tên tài xế',
-          value: order.driverName.isNotEmpty
-              ? order.driverName
-              : 'Chưa phân công',
-        ),
-        // if (order.driverId != null) ...[
-        //   const SizedBox(height: 12),
-        //   _buildInfoRow(
-        //     icon: Icons.badge,
-        //     label: 'Mã tài xế',
-        //     value: '${order.driverId}',
-        //   ),
-        // ],
+        if (hasDriver) ...[
+          // Có tài xế - hiển thị thông tin
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.oceanTeal.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.oceanTeal.withOpacity(0.2),
+              ),
+            ),
+            child: Row(
+              children: [
+                // Avatar
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: AppColors.oceanTeal,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      order.driverName.substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+
+                // Driver info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        order.driverName,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      if (order.driverId != null) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.badge_outlined,
+                              size: 14,
+                              color: AppColors.secondaryText,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'ID: ${order.driverId}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.secondaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // Change driver button
+                IconButton(
+                  onPressed: () => _showDriverSelectionDialog(context),
+                  icon: const Icon(Icons.edit),
+                  color: AppColors.oceanTeal,
+                  tooltip: 'Thay đổi tài xế',
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.oceanTeal.withOpacity(0.1),
+                    padding: const EdgeInsets.all(12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ] else ...[
+          // Chưa có tài xế - hiển thị nút chọn
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.sectionBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.hintText.withOpacity(0.2),
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.person_off_outlined,
+                  size: 48,
+                  color: AppColors.hintText.withOpacity(0.5),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Chưa phân công tài xế',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Nhấn nút bên dưới để chọn tài xế cho đơn hàng',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showDriverSelectionDialog(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.oceanTeal,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(
+                      Icons.person_add,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    label: const Text(
+                      'Chọn tài xế',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
+    );
+  }
+
+  // Thêm method mới để show dialog
+  void _showDriverSelectionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const DriverSelectionDialog(),
     );
   }
 
@@ -1356,7 +1505,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                 maxHeight: MediaQuery.of(context).size.height * 0.7,
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(5),
                 child: CachedNetworkImage(
                   imageUrl: image.url,
                   fit: BoxFit.contain,

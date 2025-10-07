@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:nalogistics_app/core/base/base_controller.dart';
+import 'package:nalogistics_app/data/models/driver/driver_list_model.dart';
 import 'package:nalogistics_app/data/models/order/operator_order_detail_model.dart';
 import 'package:nalogistics_app/data/models/order/pending_image_model.dart';
 import 'package:nalogistics_app/data/repositories/implementations/order_repository.dart';
@@ -391,6 +392,169 @@ class OperatorOrderDetailController extends BaseController {
     _orderDetail = null;
     _currentOrderID = null;
     clearError();
+    notifyListeners();
+  }
+
+  // ============================================
+  // DRIVER ASSIGNMENT STATE & METHODS
+  // ============================================
+
+  List<DriverItemModel> _driverList = [];
+  bool _isLoadingDrivers = false;
+  bool _isAssigningDriver = false;
+  String? _driverSearchQuery;
+
+  List<DriverItemModel> get driverList => _driverList;
+  bool get isLoadingDrivers => _isLoadingDrivers;
+  bool get isAssigningDriver => _isAssigningDriver;
+  String? get driverSearchQuery => _driverSearchQuery;
+
+  // Filtered driver list dựa trên search query
+  List<DriverItemModel> get filteredDriverList {
+    if (_driverSearchQuery == null || _driverSearchQuery!.isEmpty) {
+      return _driverList;
+    }
+
+    final query = _driverSearchQuery!.toLowerCase();
+    return _driverList.where((driver) {
+      return driver.driverName.toLowerCase().contains(query) ||
+          driver.licenseNo.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  /// Load danh sách tài xế
+  Future<void> loadDriverList({String? searchQuery}) async {
+    try {
+      _isLoadingDrivers = true;
+      _driverSearchQuery = searchQuery;
+      notifyListeners();
+
+      print('📋 Loading driver list...');
+
+      final response = await _orderRepository.getDriverList(
+        keySearch: searchQuery,
+        pageSize: 100,
+        order: 'asc',
+        sortBy: 'id',
+      );
+
+      if (response.isSuccess) {
+        _driverList = response.data.where((d) => d.isActive).toList();
+        print('✅ Loaded ${_driverList.length} active drivers');
+      } else {
+        print('❌ Failed to load drivers: ${response.message}');
+        setError(response.message);
+      }
+
+      _isLoadingDrivers = false;
+      notifyListeners();
+    } catch (e) {
+      print('❌ Load Driver List Error: $e');
+      setError('Không thể tải danh sách tài xế');
+      _isLoadingDrivers = false;
+      notifyListeners();
+    }
+  }
+
+  /// Chọn tài xế (chỉ update state, chưa call API)
+  void selectDriver(DriverItemModel driver) {
+    if (_orderDetail == null) return;
+
+    print('🚗 Selecting driver: ${driver.driverName} (ID: ${driver.driverID})');
+
+    // Update order detail với driver mới
+    _orderDetail = OperatorOrderDetailModel(
+      orderDate: _orderDetail!.orderDate,
+      customerId: _orderDetail!.customerId,
+      customerName: _orderDetail!.customerName,
+      driverId: driver.driverID,
+      driverName: driver.driverName,
+      truckId: _orderDetail!.truckId,
+      truckNo: _orderDetail!.truckNo,
+      rmoocId: _orderDetail!.rmoocId,
+      rmoocNo: _orderDetail!.rmoocNo,
+      containerNo: _orderDetail!.containerNo,
+      containerType: _orderDetail!.containerType,
+      billBookingNo: _orderDetail!.billBookingNo,
+      fromLocationID: _orderDetail!.fromLocationID,
+      fromWhereID: _orderDetail!.fromWhereID,
+      toLocationID: _orderDetail!.toLocationID,
+      fromLocationName: _orderDetail!.fromLocationName,
+      fromWhereName: _orderDetail!.fromWhereName,
+      toLocationName: _orderDetail!.toLocationName,
+      status: _orderDetail!.status,
+      rowVersion: _orderDetail!.rowVersion,
+      createdDate: _orderDetail!.createdDate,
+      orderLineList1: _orderDetail!.orderLineList1,
+      orderLineList: _orderDetail!.orderLineList,
+      orderImageList: _orderDetail!.orderImageList,
+    );
+
+    notifyListeners();
+    print('✅ Driver selected in state');
+  }
+
+  /// Phân công tài xế cho đơn hàng (call API)
+  /// Gọi method này khi cần lưu thay đổi lên server
+  Future<bool> assignDriverToOrder(int driverID) async {
+    if (_currentOrderID == null) {
+      setError('Không có thông tin đơn hàng');
+      return false;
+    }
+
+    try {
+      _isAssigningDriver = true;
+      clearError();
+      notifyListeners();
+
+      print('🚗 Assigning driver $driverID to order $_currentOrderID');
+
+      final response = await _orderRepository.assignDriverToOrder(
+        orderID: _currentOrderID!,
+        driverID: driverID,
+      );
+
+      if (response.isSuccess) {
+        print('✅ Driver assigned successfully');
+        _isAssigningDriver = false;
+        notifyListeners();
+        return true;
+      } else {
+        print('❌ Failed to assign driver: ${response.message}');
+        setError(response.message);
+        _isAssigningDriver = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      print('❌ Assign Driver Error: $e');
+      setError('Không thể phân công tài xế: ${e.toString()}');
+      _isAssigningDriver = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Get selected driver info
+  DriverItemModel? getSelectedDriver() {
+    if (_orderDetail?.driverId == null) return null;
+
+    return _driverList.firstWhere(
+          (d) => d.driverID == _orderDetail!.driverId,
+      orElse: () => DriverItemModel(
+        driverID: _orderDetail!.driverId!,
+        driverName: _orderDetail!.driverName,
+        licenseNo: '',
+        isActive: true,
+        status: 0,
+      ),
+    );
+  }
+
+  /// Clear driver list
+  void clearDriverList() {
+    _driverList = [];
+    _driverSearchQuery = null;
     notifyListeners();
   }
 

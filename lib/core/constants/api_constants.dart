@@ -26,10 +26,19 @@ class ApiConstants {
   static const String operatorConfirmOrder = '$apiVersion/Order/updateStatusOrderForOperator';
 
   // ==========================================
+  // ADMIN/DRIVER MANAGEMENT ENDPOINTS
+  // ==========================================
+  /// Get list of drivers
+  static const String listDrivers = '$apiVersion/admin/Driver/listDriver';
+
+  /// Assign driver to order
+  static const String assignDriver = '$apiVersion/Order/assignDriver';
+
+  // ==========================================
   // IMAGE UPLOAD ENDPOINTS
   // ==========================================
 
-  /// ⭐ UPDATED: New image upload endpoint
+  /// New image upload endpoint
   static const String uploadOrderImage = '$apiVersion/Image/createImageAndUpload';
 
   // ==========================================
@@ -49,6 +58,14 @@ class ApiConstants {
     'order': 'asc',
     'sortBy': 'id',
     'pageSize': '30',
+    'pageNumber': '1',
+  };
+
+  /// Driver list default params
+  static const Map<String, String> defaultDriverListParams = {
+    'order': 'asc',
+    'sortBy': 'id',
+    'pageSize': '100',
     'pageNumber': '1',
   };
 
@@ -83,5 +100,24 @@ class ApiConstants {
   /// Build URL cho Operator confirm order
   static String getOperatorConfirmOrderUrl(String orderId) {
     return '$operatorConfirmOrder?orderID=$orderId';
+  }
+
+  /// Build URL cho driver list with search
+  static String getDriverListUrl({String? keySearch}) {
+    final params = Map<String, String>.from(defaultDriverListParams);
+    if (keySearch != null && keySearch.isNotEmpty) {
+      params['keySearch'] = keySearch;
+    }
+
+    final queryString = params.entries
+        .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+        .join('&');
+
+    return '$listDrivers?$queryString';
+  }
+
+  /// Build URL cho assign driver
+  static String getAssignDriverUrl(String orderId, int driverId) {
+    return '$assignDriver?orderID=$orderId&driverID=$driverId';
   }
 }

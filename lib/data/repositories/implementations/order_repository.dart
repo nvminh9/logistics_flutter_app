@@ -1,3 +1,5 @@
+import 'package:nalogistics_app/data/models/driver/driver_list_model.dart';
+import 'package:nalogistics_app/data/models/order/assign_driver_response_model.dart';
 import 'package:nalogistics_app/data/models/order/order_api_model.dart';
 import 'package:nalogistics_app/data/models/order/order_operator_model.dart';
 import 'package:nalogistics_app/data/models/order/order_detail_api_model.dart';
@@ -212,6 +214,69 @@ class OrderRepository implements IOrderRepository {
       return ConfirmOrderResponse.fromJson(response);
     } catch (e) {
       print('❌ Confirm Pending Order Error: $e');
+      rethrow;
+    }
+  }
+
+  /// Get list of available drivers
+  Future<DriverListResponse> getDriverList({
+    String order = 'asc',
+    String sortBy = 'id',
+    int pageSize = 100,
+    int pageNumber = 1,
+    String? keySearch,
+  }) async {
+    try {
+      final queryParams = {
+        'order': order,
+        'sortBy': sortBy,
+        'pageSize': pageSize.toString(),
+        'pageNumber': pageNumber.toString(),
+      };
+
+      if (keySearch != null && keySearch.isNotEmpty) {
+        queryParams['keySearch'] = keySearch;
+      }
+
+      print('📤 Fetching driver list with params: $queryParams');
+
+      final response = await _apiClient.get(
+        ApiConstants.listDrivers,
+        queryParams: queryParams,
+        requiresAuth: true,
+      );
+
+      return DriverListResponse.fromJson(response);
+    } catch (e) {
+      print('❌ Get Driver List Error: $e');
+      rethrow;
+    }
+  }
+
+  /// Assign driver to order
+  Future<AssignDriverResponse> assignDriverToOrder({
+    required String orderID,
+    required int driverID,
+  }) async {
+    try {
+      final queryParams = {
+        'orderID': orderID,
+        'driverID': driverID.toString(),
+      };
+
+      print('📤 Assigning driver $driverID to order $orderID');
+
+      final response = await _apiClient.put(
+        ApiConstants.assignDriver,
+        queryParams: queryParams,
+        requiresAuth: true,
+      );
+
+      print('📥 Assign driver response: ${response['statusCode']}');
+
+      return AssignDriverResponse.fromJson(response);
+    } catch (e) {
+      print('❌ Assign Driver Error: $e');
       rethrow;
     }
   }

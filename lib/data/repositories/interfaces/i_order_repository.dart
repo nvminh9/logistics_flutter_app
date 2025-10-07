@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:nalogistics_app/data/models/driver/driver_list_model.dart';
+import 'package:nalogistics_app/data/models/order/assign_driver_response_model.dart';
 import 'package:nalogistics_app/data/models/order/order_api_model.dart';
 import 'package:nalogistics_app/data/models/order/order_operator_model.dart';
 import 'package:nalogistics_app/data/models/order/order_detail_api_model.dart';
@@ -52,6 +54,24 @@ abstract class IOrderRepository {
 
   Future<ConfirmOrderResponse> confirmPendingOrder({
     required String orderID,
+  });
+
+  // ========================================
+  // DRIVER MANAGEMENT METHODS
+  // ========================================
+  /// Get list of available drivers
+  Future<DriverListResponse> getDriverList({
+    String order = 'asc',
+    String sortBy = 'id',
+    int pageSize = 100,
+    int pageNumber = 1,
+    String? keySearch,
+  });
+
+  /// Assign driver to order
+  Future<AssignDriverResponse> assignDriverToOrder({
+    required String orderID,
+    required int driverID,
   });
 
   // ========================================

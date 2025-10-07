@@ -35,14 +35,14 @@ dependencies:
   flutter_spinkit: ^5.2.0
 
   # Image handling
-  cached_network_image: ^3.3.0
-  image_picker: ^1.0.7          # ⭐ NEW: Pick images from camera/gallery
-  image_cropper: ^5.0.1         # ⭐ NEW: Crop images
-  photo_view: ^0.14.0           # ⭐ NEW: Zoom images
+  cached_network_image: ^3.4.1
+  image_picker: ^1.2.0         # ⭐ NEW: Pick images from camera/gallery
+  image_cropper: ^8.0.2         # ⭐ NEW: Crop images
+  photo_view: ^0.15.0           # ⭐ NEW: Zoom images
 
   # File handling
-  path_provider: ^2.1.2         # ⭐ NEW: Get temp directory
-  path: ^1.8.3                  # ⭐ NEW: Path manipulation
+  path_provider: ^2.1.5         # ⭐ NEW: Get temp directory
+  path: ^1.9.1                  # ⭐ NEW: Path manipulation
 
   # Networking
   connectivity_plus: ^5.0.1

@@ -119,7 +119,7 @@ class TokenExpiredDialog extends StatelessWidget {
             child: ElevatedButton(
               onPressed:  () async {
                 Navigator.of(context).pop(true);
-                await AuthController().logout();
+                // await AuthController().logout();
                 context.go(RouteNames.login);
               },
               style: ElevatedButton.styleFrom(

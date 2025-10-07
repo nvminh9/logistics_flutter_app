@@ -473,34 +473,37 @@ class AddImagesSection extends StatelessWidget {
           'Thêm ghi chú cho ảnh',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Image preview
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.file(
-                imageFile,
-                height: 200,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descriptionController,
-              maxLines: 3,
-              maxLength: 200,
-              decoration: InputDecoration(
-                hintText: 'Nhập ghi chú (không bắt buộc)',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Image preview
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(
+                  imageFile,
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                 ),
-                filled: true,
-                fillColor: AppColors.sectionBackground,
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                maxLines: 3,
+                maxLength: 200,
+                decoration: InputDecoration(
+                  hintText: 'Nhập ghi chú (không bắt buộc)',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.sectionBackground,
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(

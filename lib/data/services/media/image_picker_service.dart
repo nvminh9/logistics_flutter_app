@@ -16,7 +16,7 @@ class ImagePickerService {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 85, // Compress to 85% quality
+        imageQuality: 85,
         maxWidth: 1920,
         maxHeight: 1920,
       );
@@ -60,7 +60,6 @@ class ImagePickerService {
 
       if (images.isEmpty) return [];
 
-      // Limit số lượng
       final limitedImages = images.take(maxImages).toList();
 
       return limitedImages.map((xFile) => File(xFile.path)).toList();
@@ -70,7 +69,7 @@ class ImagePickerService {
     }
   }
 
-  /// Crop image
+  /// ⭐ UPDATED: Crop image với API mới
   Future<File?> cropImage(File imageFile) async {
     try {
       final croppedFile = await ImageCropper().cropImage(
@@ -86,22 +85,25 @@ class ImagePickerService {
             activeControlsWidgetColor: AppColors.maritimeBlue,
             initAspectRatio: CropAspectRatioPreset.original,
             lockAspectRatio: false,
-            // aspectRatioPresets: [
-            //   CropAspectRatioPreset.original,
-            //   CropAspectRatioPreset.square,
-            //   CropAspectRatioPreset.ratio4x3,
-            //   CropAspectRatioPreset.ratio16x9,
-            // ],
+            aspectRatioPresets: [
+              CropAspectRatioPreset.original,
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio4x3,
+              CropAspectRatioPreset.ratio16x9,
+            ],
           ),
           IOSUiSettings(
             title: 'Cắt ảnh',
-            // aspectRatioPresets: [
-            //   CropAspectRatioPreset.original,
-            //   CropAspectRatioPreset.square,
-            //   CropAspectRatioPreset.ratio4x3,
-            //   CropAspectRatioPreset.ratio16x9,
-            // ],
+            aspectRatioPresets: [
+              CropAspectRatioPreset.original,
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio4x3,
+              CropAspectRatioPreset.ratio16x9,
+            ],
           ),
+          // WebUiSettings(
+          //   context: null, // ⚠️ Trong web, cần pass BuildContext
+          // ),
         ],
       );
 

@@ -24,6 +24,7 @@ class ApiConstants {
   static const String operatorOrderDetail = '$apiVersion/Order/detailOrder';
   static const String operatorUpdateStatus = '$apiVersion/Order/updateStatusOrder';
   static const String operatorConfirmOrder = '$apiVersion/Order/updateStatusOrderForOperator';
+  static const String updateOrder = '$apiVersion/Order/updateOrder';
 
   // ==========================================
   // DRIVER MANAGEMENT ENDPOINTS
@@ -134,6 +135,11 @@ class ApiConstants {
   /// Build URL cho Operator confirm order
   static String getOperatorConfirmOrderUrl(String orderId) {
     return '$operatorConfirmOrder?orderID=$orderId';
+  }
+
+  /// Build URL for update order
+  static String getUpdateOrderUrl(String orderId) {
+    return '$updateOrder?id=$orderId';
   }
 
   /// Build URL cho driver list with search

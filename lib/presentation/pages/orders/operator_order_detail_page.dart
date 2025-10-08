@@ -368,6 +368,12 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           return _buildDetailView(order);
         },
       ),
+      // ⭐ ADD: Bottom update button bar
+      bottomNavigationBar: Consumer<OperatorOrderDetailController>(
+        builder: (context, controller, child) {
+          return _buildUpdateButton(controller);
+        },
+      ),
       // ⭐ FLOATING ACTION BUTTON CHO PENDING ORDER
       floatingActionButton: Consumer<OperatorOrderDetailController>(
         builder: (context, controller, child) {
@@ -1840,6 +1846,411 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           ],
         ),
       ),
+    );
+  }
+
+  // Add this widget to OperatorOrderDetailPage
+
+  Widget _buildUpdateButton(OperatorOrderDetailController controller) {
+    final hasChanges = controller.hasUnsavedChanges;
+    final isUpdating = controller.isUpdatingOrder;
+
+    if (!hasChanges) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            // Discard button
+            Expanded(
+              flex: 2,
+              child: OutlinedButton.icon(
+                onPressed: isUpdating ? null : () => _handleDiscardChanges(controller),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: const BorderSide(color: AppColors.statusError),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.close,
+                  size: 20,
+                  color: AppColors.statusError,
+                ),
+                label: const Text(
+                  'Hủy',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.statusError,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Update button
+            Expanded(
+              flex: 3,
+              child: ElevatedButton.icon(
+                onPressed: isUpdating ? null : () => _handleUpdateOrder(controller),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.statusDelivered,
+                  disabledBackgroundColor: AppColors.hintText,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+                icon: isUpdating
+                    ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+                    : const Icon(
+                  Icons.check_circle,
+                  size: 20,
+                  color: Colors.white,
+                ),
+                label: Text(
+                  isUpdating ? 'Đang lưu...' : 'Lưu thay đổi',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+// Handler methods
+  Future<void> _handleUpdateOrder(OperatorOrderDetailController controller) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => _buildUpdateConfirmDialog(controller),
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              CircularProgressIndicator(color: AppColors.statusDelivered),
+              SizedBox(height: 20),
+              Text(
+                'Đang cập nhật đơn hàng...',
+                style: TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Call update
+    final success = await controller.updateOrder();
+
+    if (!mounted) return;
+
+    // Close loading
+    Navigator.of(context).pop();
+
+    if (success) {
+      // Show success
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.check_circle, color: Colors.white, size: 24),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Cập nhật đơn hàng thành công!',
+                  style: TextStyle(fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.statusDelivered,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      // Reload order detail
+      await controller.reloadOrderDetail();
+    } else {
+      // Show error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  controller.errorMessage ?? 'Cập nhật thất bại',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.statusError,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleDiscardChanges(OperatorOrderDetailController controller) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.warning, color: AppColors.statusDelayed),
+            const SizedBox(width: 12),
+            const Text('Hủy thay đổi?'),
+          ],
+        ),
+        content: const Text(
+          'Bạn có chắc muốn hủy các thay đổi? '
+              'Tất cả thay đổi chưa lưu sẽ bị mất.',
+          style: TextStyle(fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Không'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.statusError,
+            ),
+            child: const Text(
+              'Hủy thay đổi',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      controller.discardChanges();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Đã hủy thay đổi'),
+          backgroundColor: AppColors.secondaryText,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Widget _buildUpdateConfirmDialog(OperatorOrderDetailController controller) {
+    final order = controller.orderDetail!;
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.statusDelivered.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.save,
+              color: AppColors.statusDelivered,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Xác nhận cập nhật',
+              style: TextStyle(fontSize: 20),
+            ),
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Bạn có chắc muốn lưu các thay đổi sau?',
+            style: TextStyle(fontSize: 16, height: 1.5),
+          ),
+          const SizedBox(height: 16),
+
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.sectionBackground,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                if (order.driverId != controller.originalDriverId) ...[
+                  _buildChangeItem(
+                    icon: Icons.person,
+                    label: 'Tài xế',
+                    oldValue: '${controller.originalDriverName ?? "Chưa có"}',
+                    newValue: order.driverName,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                if (order.truckId != controller.originalTruckId) ...[
+                  _buildChangeItem(
+                    icon: Icons.local_shipping,
+                    label: 'Xe',
+                    oldValue: '${controller.originalTruckNo ?? "Chưa có"}',
+                    newValue: order.truckNo,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                if (order.rmoocId != controller.originalRmoocId) ...[
+                  _buildChangeItem(
+                    icon: Icons.rv_hookup,
+                    label: 'Rơ-mooc',
+                    oldValue: '${controller.originalRmoocNo ?? "Chưa có"}',
+                    newValue: order.rmoocNo,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Hủy'),
+        ),
+        ElevatedButton.icon(
+          onPressed: () => Navigator.pop(context, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.statusDelivered,
+          ),
+          icon: const Icon(Icons.check, size: 18),
+          label: const Text(
+            'Xác nhận',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChangeItem({
+    required IconData icon,
+    required String label,
+    required String oldValue,
+    required String newValue,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppColors.secondaryText),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+              Row(
+                children: [
+                  Text(
+                    oldValue,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.statusError,
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.arrow_forward,
+                    size: 12,
+                    color: AppColors.secondaryText,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      newValue,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.statusDelivered,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

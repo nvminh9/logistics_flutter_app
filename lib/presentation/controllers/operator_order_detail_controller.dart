@@ -59,6 +59,10 @@ class OperatorOrderDetailController extends BaseController {
       setLoading(false);
       notifyListeners();
 
+      // Initialize original values after loading
+      if (_orderDetail != null) {
+        _initializeOriginalValues();
+      }
     } catch (e) {
       print('❌ Load Operator Order Detail Error: $e');
       setError(e.toString());
@@ -494,6 +498,7 @@ class OperatorOrderDetailController extends BaseController {
 
     notifyListeners();
     print('✅ Driver selected in state');
+    _checkForChanges();
   }
 
   /// Phân công tài xế cho đơn hàng (call API)
@@ -657,6 +662,7 @@ class OperatorOrderDetailController extends BaseController {
 
     notifyListeners();
     print('✅ Truck selected in state');
+    _checkForChanges();
   }
 
   /// Phân công xe cho đơn hàng (call API)
@@ -816,6 +822,7 @@ class OperatorOrderDetailController extends BaseController {
 
     notifyListeners();
     print('✅ Truck selected in state');
+    _checkForChanges();
   }
 
   /// Phân công rmooc cho đơn hàng (call API)
@@ -878,6 +885,166 @@ class OperatorOrderDetailController extends BaseController {
     _rmoocSearchQuery = null;
     notifyListeners();
   }
+
+  // ============================================
+  // CHANGE TRACKING STATE
+  // ============================================
+
+  bool _hasUnsavedChanges = false;
+  bool _isUpdatingOrder = false;
+  // Store original values to track changes
+  int? _originalDriverId;
+  int? _originalTruckId;
+  int? _originalRmoocId;
+  String? _originalDriverName;
+  String? _originalTruckNo;
+  String? _originalRmoocNo;
+
+  // Getters
+  int? get originalDriverId => _originalDriverId;
+  int? get originalTruckId => _originalTruckId;
+  int? get originalRmoocId => _originalRmoocId;
+  String? get originalDriverName => _originalDriverName;
+  String? get originalTruckNo => _originalTruckNo;
+  String? get originalRmoocNo => _originalRmoocNo;
+  bool get hasUnsavedChanges => _hasUnsavedChanges;
+  bool get isUpdatingOrder => _isUpdatingOrder;
+
+  /// Initialize original values when loading order
+  void _initializeOriginalValues() {
+    if (_orderDetail == null) return;
+
+    _originalDriverId = _orderDetail!.driverId;
+    _originalTruckId = _orderDetail!.truckId;
+    _originalRmoocId = _orderDetail!.rmoocId;
+    _originalDriverName = _orderDetail!.driverName;
+    _originalTruckNo = _orderDetail!.truckNo;
+    _originalRmoocNo = _orderDetail!.rmoocNo;
+
+    _hasUnsavedChanges = false;
+
+    print('📝 Initialized original values:');
+    print('   Driver: $_originalDriverId');
+    print('   Truck: $_originalTruckId');
+    print('   Rmooc: $_originalRmoocId');
+  }
+
+  /// Check if there are any changes
+  void _checkForChanges() {
+    if (_orderDetail == null) {
+      _hasUnsavedChanges = false;
+      return;
+    }
+
+    final hasDriverChanged = _orderDetail!.driverId != _originalDriverId;
+    final hasTruckChanged = _orderDetail!.truckId != _originalTruckId;
+    final hasRmoocChanged = _orderDetail!.rmoocId != _originalRmoocId;
+
+    _hasUnsavedChanges = hasDriverChanged || hasTruckChanged || hasRmoocChanged;
+
+    if (_hasUnsavedChanges) {
+      print('⚠️ Detected unsaved changes:');
+      if (hasDriverChanged) print('   - Driver: $_originalDriverId → ${_orderDetail!.driverId}');
+      if (hasTruckChanged) print('   - Truck: $_originalTruckId → ${_orderDetail!.truckId}');
+      if (hasRmoocChanged) print('   - Rmooc: $_originalRmoocId → ${_orderDetail!.rmoocId}');
+    }
+
+    notifyListeners();
+  }
+
+  /// Override selectDriver to track changes
+  // @override
+  // void selectDriver(DriverItemModel driver) {
+  //   super.selectDriver(driver);
+  //   _checkForChanges();
+  // }
+
+  /// Override selectTruck to track changes
+  // @override
+  // void selectTruck(TruckItemModel truck) {
+  //   super.selectTruck(truck);
+  //   _checkForChanges();
+  // }
+
+  /// Override selectRmooc to track changes
+  // @override
+  // void selectRmooc(RmoocItemModel rmooc) {
+  //   super.selectRmooc(rmooc);
+  //   _checkForChanges();
+  // }
+
+  /// Update order với changes
+  Future<bool> updateOrder() async {
+    if (_orderDetail == null || _currentOrderID == null) {
+      setError('Không có thông tin đơn hàng');
+      return false;
+    }
+
+    if (!_hasUnsavedChanges) {
+      setError('Không có thay đổi nào để lưu');
+      return false;
+    }
+
+    try {
+      _isUpdatingOrder = true;
+      clearError();
+      notifyListeners();
+
+      print('🔄 Updating order $_currentOrderID');
+      print('   Changes detected: $_hasUnsavedChanges');
+
+      // Prepare order data for update
+      final orderData = _orderDetail!.toJson();
+
+      // Call API
+      final response = await _orderRepository.updateOrder(
+        orderId: _currentOrderID!,
+        orderData: orderData,
+      );
+
+      if (response.isSuccess) {
+        print('✅ Order updated successfully');
+
+        // Update original values to new values
+        _initializeOriginalValues();
+
+        _isUpdatingOrder = false;
+        notifyListeners();
+        return true;
+      } else {
+        print('❌ Update failed: ${response.message}');
+        setError(response.message);
+        _isUpdatingOrder = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      print('❌ Update Order Error: $e');
+      setError('Không thể cập nhật đơn hàng: ${e.toString()}');
+      _isUpdatingOrder = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Reset changes (discard)
+  void discardChanges() async {
+    if (_currentOrderID == null) return;
+
+    // Reload order detail to reset to original values
+    await loadOrderDetail(_currentOrderID!);
+  }
+
+  /// Update loadOrderDetail to initialize tracking
+  // @override
+  // Future<void> loadOrderDetail(String orderID) async {
+  //   await super.loadOrderDetail(orderID);
+  //
+  //   // Initialize original values after loading
+  //   if (_orderDetail != null) {
+  //     _initializeOriginalValues();
+  //   }
+  // }
 
   @override
   void dispose() {

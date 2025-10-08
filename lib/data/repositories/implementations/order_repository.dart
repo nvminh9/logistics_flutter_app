@@ -1,6 +1,7 @@
 import 'package:nalogistics_app/data/models/driver/driver_list_model.dart';
 import 'package:nalogistics_app/data/models/order/assign_rmooc_response_model.dart';
 import 'package:nalogistics_app/data/models/order/assign_truck_response_model.dart';
+import 'package:nalogistics_app/data/models/order/update_order_response_model.dart';
 import 'package:nalogistics_app/data/models/rmooc/rmooc_list_model.dart';
 import 'package:nalogistics_app/data/models/truck/truck_list_model.dart';
 import 'package:nalogistics_app/data/models/order/assign_driver_response_model.dart';
@@ -409,6 +410,30 @@ class OrderRepository implements IOrderRepository {
       return AssignRmoocResponse.fromJson(response);
     } catch (e) {
       print('❌ Assign Rmooc Error: $e');
+      rethrow;
+    }
+  }
+
+  /// Update order with modified data
+  Future<UpdateOrderResponse> updateOrder({
+    required String orderId,
+    required Map<String, dynamic> orderData,
+  }) async {
+    try {
+      print('📤 Updating order $orderId');
+      print('   Data keys: ${orderData.keys.join(", ")}');
+
+      final response = await _apiClient.put(
+        ApiConstants.getUpdateOrderUrl(orderId),
+        body: orderData,
+        requiresAuth: true,
+      );
+
+      print('📥 Update order response: ${response['statusCode']}');
+
+      return UpdateOrderResponse.fromJson(response);
+    } catch (e) {
+      print('❌ Update Order Error: $e');
       rethrow;
     }
   }

@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:nalogistics_app/data/models/driver/driver_list_model.dart';
 import 'package:nalogistics_app/data/models/order/assign_driver_response_model.dart';
+import 'package:nalogistics_app/data/models/order/assign_rmooc_response_model.dart';
+import 'package:nalogistics_app/data/models/order/assign_truck_response_model.dart';
 import 'package:nalogistics_app/data/models/order/order_api_model.dart';
 import 'package:nalogistics_app/data/models/order/order_operator_model.dart';
 import 'package:nalogistics_app/data/models/order/order_detail_api_model.dart';
@@ -8,6 +10,8 @@ import 'package:nalogistics_app/data/models/order/operator_order_detail_model.da
 import 'package:nalogistics_app/data/models/order/update_status_response_model.dart';
 import 'package:nalogistics_app/data/models/order/confirm_order_response_model.dart';
 import 'package:nalogistics_app/data/models/order/pending_image_model.dart';
+import 'package:nalogistics_app/data/models/rmooc/rmooc_list_model.dart';
+import 'package:nalogistics_app/data/models/truck/truck_list_model.dart';
 
 abstract class IOrderRepository {
   // ========================================
@@ -72,6 +76,42 @@ abstract class IOrderRepository {
   Future<AssignDriverResponse> assignDriverToOrder({
     required String orderID,
     required int driverID,
+  });
+
+  // ========================================
+  // TRUCK MANAGEMENT METHODS
+  // ========================================
+  /// Get list of available trucks
+  Future<TruckListResponse> getTruckList({
+    String order = 'asc',
+    String sortBy = 'id',
+    int pageSize = 30,
+    int pageNumber = 1,
+    String? keySearch,
+  });
+
+  /// Assign truck to order
+  Future<AssignTruckResponse> assignTruckToOrder({
+    required String orderID,
+    required int truckID,
+  });
+
+  // ========================================
+  // RMOOC MANAGEMENT METHODS
+  // ========================================
+  /// Get list of available rmooc
+  Future<RmoocListResponse> getRmoocList({
+    String order = 'asc',
+    String sortBy = 'id',
+    int pageSize = 30,
+    int pageNumber = 1,
+    String? keySearch,
+  });
+
+  /// Assign rmooc to order
+  Future<AssignRmoocResponse> assignRmoocToOrder({
+    required String orderID,
+    required int rmoocID,
   });
 
   // ========================================

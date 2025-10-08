@@ -4,6 +4,8 @@ import 'package:nalogistics_app/core/base/base_controller.dart';
 import 'package:nalogistics_app/data/models/driver/driver_list_model.dart';
 import 'package:nalogistics_app/data/models/order/operator_order_detail_model.dart';
 import 'package:nalogistics_app/data/models/order/pending_image_model.dart';
+import 'package:nalogistics_app/data/models/rmooc/rmooc_list_model.dart';
+import 'package:nalogistics_app/data/models/truck/truck_list_model.dart';
 import 'package:nalogistics_app/data/repositories/implementations/order_repository.dart';
 import 'package:nalogistics_app/domain/usecases/order/get_operator_order_detail_usecase.dart';
 import 'package:nalogistics_app/domain/usecases/order/confirm_pending_order_usecase.dart';
@@ -509,6 +511,7 @@ class OperatorOrderDetailController extends BaseController {
 
       print('🚗 Assigning driver $driverID to order $_currentOrderID');
 
+      // Call API
       final response = await _orderRepository.assignDriverToOrder(
         orderID: _currentOrderID!,
         driverID: driverID,
@@ -555,6 +558,324 @@ class OperatorOrderDetailController extends BaseController {
   void clearDriverList() {
     _driverList = [];
     _driverSearchQuery = null;
+    notifyListeners();
+  }
+
+  // ============================================
+  // TRUCK ASSIGNMENT STATE & METHODS
+  // ============================================
+
+  List<TruckItemModel> _truckList = [];
+  bool _isLoadingTrucks = false;
+  bool _isAssigningTruck = false;
+  String? _truckSearchQuery;
+
+  List<TruckItemModel> get truckList => _truckList;
+  bool get isLoadingTrucks => _isLoadingTrucks;
+  bool get isAssigningTruck => _isAssigningTruck;
+  String? get truckSearchQuery => _truckSearchQuery;
+
+  // Filtered truck list dựa trên search query
+  List<TruckItemModel> get filteredTruckList {
+    if (_truckSearchQuery == null || _truckSearchQuery!.isEmpty) {
+      return _truckList;
+    }
+
+    final query = _truckSearchQuery!.toLowerCase();
+    return _truckList.where((truck) {
+      return truck.truckNo.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  /// Load danh sách xe
+  Future<void> loadTruckList({String? searchQuery}) async {
+    try {
+      _isLoadingTrucks = true;
+      _truckSearchQuery = searchQuery;
+      notifyListeners();
+
+      print('📋 Loading truck list...');
+
+      final response = await _orderRepository.getTruckList(
+        keySearch: searchQuery,
+        pageSize: 30,
+        order: 'asc',
+        sortBy: 'id',
+      );
+
+      if (response.isSuccess) {
+        _truckList = response.data.where((t) => t.isActive).toList();
+        print('✅ Loaded ${_truckList.length} active trucks');
+      } else {
+        print('❌ Failed to load trucks: ${response.message}');
+        setError(response.message);
+      }
+
+      _isLoadingTrucks = false;
+      notifyListeners();
+    } catch (e) {
+      print('❌ Load Truck List Error: $e');
+      setError('Không thể tải danh sách xe');
+      _isLoadingTrucks = false;
+      notifyListeners();
+    }
+  }
+
+  /// Chọn xe (chỉ update state, chưa call API)
+  void selectTruck(TruckItemModel truck) {
+    if (_orderDetail == null) return;
+
+    print('🚗 Selecting truck: ${truck.truckNo} (ID: ${truck.truckID})');
+
+    // Update order detail với truck mới
+    _orderDetail = OperatorOrderDetailModel(
+      orderDate: _orderDetail!.orderDate,
+      customerId: _orderDetail!.customerId,
+      customerName: _orderDetail!.customerName,
+      driverId: _orderDetail!.driverId,
+      driverName: _orderDetail!.driverName,
+      truckId: truck.truckID,
+      truckNo: truck.truckNo,
+      rmoocId: _orderDetail!.rmoocId,
+      rmoocNo: _orderDetail!.rmoocNo,
+      containerNo: _orderDetail!.containerNo,
+      containerType: _orderDetail!.containerType,
+      billBookingNo: _orderDetail!.billBookingNo,
+      fromLocationID: _orderDetail!.fromLocationID,
+      fromWhereID: _orderDetail!.fromWhereID,
+      toLocationID: _orderDetail!.toLocationID,
+      fromLocationName: _orderDetail!.fromLocationName,
+      fromWhereName: _orderDetail!.fromWhereName,
+      toLocationName: _orderDetail!.toLocationName,
+      status: _orderDetail!.status,
+      rowVersion: _orderDetail!.rowVersion,
+      createdDate: _orderDetail!.createdDate,
+      orderLineList1: _orderDetail!.orderLineList1,
+      orderLineList: _orderDetail!.orderLineList,
+      orderImageList: _orderDetail!.orderImageList,
+    );
+
+    notifyListeners();
+    print('✅ Truck selected in state');
+  }
+
+  /// Phân công xe cho đơn hàng (call API)
+  Future<bool> assignTruckToOrder(int truckID) async {
+    if (_currentOrderID == null) {
+      setError('Không có thông tin đơn hàng');
+      return false;
+    }
+
+    try {
+      _isAssigningTruck = true;
+      clearError();
+      notifyListeners();
+
+      print('🚗 Assigning truck $truckID to order $_currentOrderID');
+
+      final response = await _orderRepository.assignTruckToOrder(
+        orderID: _currentOrderID!,
+        truckID: truckID,
+      );
+
+      if (response.isSuccess) {
+        print('✅ Truck assigned successfully');
+        _isAssigningTruck = false;
+        notifyListeners();
+        return true;
+      } else {
+        print('❌ Failed to assign truck: ${response.message}');
+        setError(response.message);
+        _isAssigningTruck = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      print('❌ Assign Truck Error: $e');
+      setError('Không thể phân công xe: ${e.toString()}');
+      _isAssigningTruck = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Get selected truck info
+  TruckItemModel? getSelectedTruck() {
+    if (_orderDetail?.truckId == null) return null;
+
+    return _truckList.firstWhere(
+          (t) => t.truckID == _orderDetail!.truckId,
+      orElse: () => TruckItemModel(
+        truckID: _orderDetail!.truckId!,
+        truckNo: _orderDetail!.truckNo,
+        isActive: true,
+      ),
+    );
+  }
+
+  /// Clear truck list
+  void clearTruckList() {
+    _truckList = [];
+    _truckSearchQuery = null;
+    notifyListeners();
+  }
+
+  // ============================================
+  // RMOOC ASSIGNMENT STATE & METHODS
+  // ============================================
+
+  List<RmoocItemModel> _rmoocList = [];
+  bool _isLoadingRmoocs = false;
+  bool _isAssigningRmooc = false;
+  String? _rmoocSearchQuery;
+
+  List<RmoocItemModel> get rmoocList => _rmoocList;
+  bool get isLoadingRmoocs => _isLoadingRmoocs;
+  bool get isAssigningRmooc => _isAssigningRmooc;
+  String? get rmoocSearchQuery => _rmoocSearchQuery;
+
+  // Filtered rmooc list dựa trên search query
+  List<RmoocItemModel> get filteredRmoocList {
+    if (_rmoocSearchQuery == null || _rmoocSearchQuery!.isEmpty) {
+      return _rmoocList;
+    }
+
+    final query = _rmoocSearchQuery!.toLowerCase();
+    return _rmoocList.where((rmooc) {
+      return rmooc.rmoocNo.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  /// Load danh sách rmooc
+  Future<void> loadRmoocList({String? searchQuery}) async {
+    try {
+      _isLoadingRmoocs = true;
+      _rmoocSearchQuery = searchQuery;
+      notifyListeners();
+
+      print('📋 Loading rmooc list...');
+
+      final response = await _orderRepository.getRmoocList(
+        keySearch: searchQuery,
+        pageSize: 30,
+        order: 'asc',
+        sortBy: 'id',
+      );
+
+      if (response.isSuccess) {
+        _rmoocList = response.data.where((t) => t.isActive).toList();
+        print('✅ Loaded ${_rmoocList.length} active rmoocs');
+      } else {
+        print('❌ Failed to load rmoocs: ${response.message}');
+        setError(response.message);
+      }
+
+      _isLoadingRmoocs = false;
+      notifyListeners();
+    } catch (e) {
+      print('❌ Load Rmooc List Error: $e');
+      setError('Không thể tải danh sách rmooc');
+      _isLoadingRmoocs = false;
+      notifyListeners();
+    }
+  }
+
+  /// Chọn rmooc (chỉ update state, chưa call API)
+  void selectRmooc(RmoocItemModel rmooc) {
+    if (_orderDetail == null) return;
+
+    print('🚗 Selecting rmooc: ${rmooc.rmoocNo} (ID: ${rmooc.rmoocID})');
+
+    // Update order detail với rmooc mới
+    _orderDetail = OperatorOrderDetailModel(
+      orderDate: _orderDetail!.orderDate,
+      customerId: _orderDetail!.customerId,
+      customerName: _orderDetail!.customerName,
+      driverId: _orderDetail!.driverId,
+      driverName: _orderDetail!.driverName,
+      truckId: _orderDetail!.truckId,
+      truckNo: _orderDetail!.truckNo,
+      rmoocId: rmooc.rmoocID,
+      rmoocNo: rmooc.rmoocNo,
+      containerNo: _orderDetail!.containerNo,
+      containerType: _orderDetail!.containerType,
+      billBookingNo: _orderDetail!.billBookingNo,
+      fromLocationID: _orderDetail!.fromLocationID,
+      fromWhereID: _orderDetail!.fromWhereID,
+      toLocationID: _orderDetail!.toLocationID,
+      fromLocationName: _orderDetail!.fromLocationName,
+      fromWhereName: _orderDetail!.fromWhereName,
+      toLocationName: _orderDetail!.toLocationName,
+      status: _orderDetail!.status,
+      rowVersion: _orderDetail!.rowVersion,
+      createdDate: _orderDetail!.createdDate,
+      orderLineList1: _orderDetail!.orderLineList1,
+      orderLineList: _orderDetail!.orderLineList,
+      orderImageList: _orderDetail!.orderImageList,
+    );
+
+    notifyListeners();
+    print('✅ Truck selected in state');
+  }
+
+  /// Phân công rmooc cho đơn hàng (call API)
+  Future<bool> assignRmoocToOrder(int rmoocID) async {
+    if (_currentOrderID == null) {
+      setError('Không có thông tin đơn hàng');
+      return false;
+    }
+
+    try {
+      _isAssigningRmooc = true;
+      clearError();
+      notifyListeners();
+
+      print('🚗 Assigning rmooc $rmoocID to order $_currentOrderID');
+
+      final response = await _orderRepository.assignRmoocToOrder(
+        orderID: _currentOrderID!,
+        rmoocID: rmoocID,
+      );
+
+      if (response.isSuccess) {
+        print('✅ Truck assigned successfully');
+        _isAssigningRmooc = false;
+        notifyListeners();
+        return true;
+      } else {
+        print('❌ Failed to assign rmooc: ${response.message}');
+        setError(response.message);
+        _isAssigningRmooc = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      print('❌ Assign Rmooc Error: $e');
+      setError('Không thể phân công rmooc: ${e.toString()}');
+      _isAssigningRmooc = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Get selected rmooc info
+  RmoocItemModel? getSelectedRmooc() {
+    if (_orderDetail?.rmoocId == null) return null;
+
+    return _rmoocList.firstWhere(
+          (t) => t.rmoocID == _orderDetail!.rmoocId,
+      orElse: () => RmoocItemModel(
+        rmoocID: _orderDetail!.rmoocId!,
+        rmoocNo: _orderDetail!.rmoocNo,
+        isActive: true,
+      ),
+    );
+  }
+
+  /// Clear rmooc list
+  void clearRmoocList() {
+    _rmoocList = [];
+    _rmoocSearchQuery = null;
     notifyListeners();
   }
 

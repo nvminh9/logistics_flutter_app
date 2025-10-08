@@ -26,13 +26,31 @@ class ApiConstants {
   static const String operatorConfirmOrder = '$apiVersion/Order/updateStatusOrderForOperator';
 
   // ==========================================
-  // ADMIN/DRIVER MANAGEMENT ENDPOINTS
+  // DRIVER MANAGEMENT ENDPOINTS
   // ==========================================
   /// Get list of drivers
   static const String listDrivers = '$apiVersion/admin/Driver/listDriver';
 
   /// Assign driver to order
   static const String assignDriver = '$apiVersion/Order/assignDriver';
+
+  // ==========================================
+  // TRUCK MANAGEMENT ENDPOINTS
+  // ==========================================
+  /// Get list of trucks
+  static const String listTrucks = '$apiVersion/admin/Truck/searchTruck';
+
+  /// Assign truck to order
+  static const String assignTruck = '$apiVersion/Order/assignTruck';
+
+  // ==========================================
+  // RMOOC MANAGEMENT ENDPOINTS
+  // ==========================================
+  /// Get list of Rmoocs
+  static const String listRmoocs = '$apiVersion/admin/Truck/searchRmooc';
+
+  /// Assign Rmooc to order
+  static const String assignRmooc = '$apiVersion/Order/assignRmooc';
 
   // ==========================================
   // IMAGE UPLOAD ENDPOINTS
@@ -66,6 +84,22 @@ class ApiConstants {
     'order': 'asc',
     'sortBy': 'id',
     'pageSize': '100',
+    'pageNumber': '1',
+  };
+
+  /// Truck list default params
+  static const Map<String, String> defaultTruckListParams = {
+    'order': 'asc',
+    'sortBy': 'id',
+    'pageSize': '30',
+    'pageNumber': '1',
+  };
+
+  /// Rmooc list default params
+  static const Map<String, String> defaultRmoocListParams = {
+    'order': 'asc',
+    'sortBy': 'id',
+    'pageSize': '30',
     'pageNumber': '1',
   };
 
@@ -119,5 +153,43 @@ class ApiConstants {
   /// Build URL cho assign driver
   static String getAssignDriverUrl(String orderId, int driverId) {
     return '$assignDriver?orderID=$orderId&driverID=$driverId';
+  }
+
+  /// Build URL cho truck list with search
+  static String getTruckListUrl({String? keySearch}) {
+    final params = Map<String, String>.from(defaultTruckListParams);
+    if (keySearch != null && keySearch.isNotEmpty) {
+      params['keySearch'] = keySearch;
+    }
+
+    final queryString = params.entries
+        .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+        .join('&');
+
+    return '$listTrucks?$queryString';
+  }
+
+  /// Build URL cho assign truck
+  static String getAssignTruckUrl(String orderId, int truckId) {
+    return '$assignTruck?orderID=$orderId&truckID=$truckId';
+  }
+
+  /// Build URL cho rmooc list with search
+  static String getRmoocListUrl({String? keySearch}) {
+    final params = Map<String, String>.from(defaultRmoocListParams);
+    if (keySearch != null && keySearch.isNotEmpty) {
+      params['keySearch'] = keySearch;
+    }
+
+    final queryString = params.entries
+        .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+        .join('&');
+
+    return '$listRmoocs?$queryString';
+  }
+
+  /// Build URL cho assign rmooc
+  static String getAssignRmoocUrl(String orderId, int rmoocId) {
+    return '$assignTruck?orderID=$orderId&rmoocID=$rmoocId';
   }
 }

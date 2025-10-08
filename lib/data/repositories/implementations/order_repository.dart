@@ -1,4 +1,8 @@
 import 'package:nalogistics_app/data/models/driver/driver_list_model.dart';
+import 'package:nalogistics_app/data/models/order/assign_rmooc_response_model.dart';
+import 'package:nalogistics_app/data/models/order/assign_truck_response_model.dart';
+import 'package:nalogistics_app/data/models/rmooc/rmooc_list_model.dart';
+import 'package:nalogistics_app/data/models/truck/truck_list_model.dart';
 import 'package:nalogistics_app/data/models/order/assign_driver_response_model.dart';
 import 'package:nalogistics_app/data/models/order/order_api_model.dart';
 import 'package:nalogistics_app/data/models/order/order_operator_model.dart';
@@ -277,6 +281,134 @@ class OrderRepository implements IOrderRepository {
       return AssignDriverResponse.fromJson(response);
     } catch (e) {
       print('❌ Assign Driver Error: $e');
+      rethrow;
+    }
+  }
+
+  // LIST TRUCK METHOD
+  /// Get list of available truck
+  Future<TruckListResponse> getTruckList({
+    String order = 'asc',
+    String sortBy = 'id',
+    int pageSize = 30,
+    int pageNumber = 1,
+    String? keySearch,
+  }) async {
+    try {
+      final queryParams = {
+        'order': order,
+        'sortBy': sortBy,
+        'pageSize': pageSize.toString(),
+        'pageNumber': pageNumber.toString(),
+      };
+
+      if (keySearch != null && keySearch.isNotEmpty) {
+        queryParams['keySearch'] = keySearch;
+      }
+
+      print('📤 Fetching truck list with params: $queryParams');
+
+      final response = await _apiClient.get(
+        ApiConstants.listTrucks,
+        queryParams: queryParams,
+        requiresAuth: true,
+      );
+
+      return TruckListResponse.fromJson(response);
+    } catch (e) {
+      print('❌ Get Truck List Error: $e');
+      rethrow;
+    }
+  }
+
+  /// Assign truck to order
+  Future<AssignTruckResponse> assignTruckToOrder({
+    required String orderID,
+    required int truckID,
+  }) async {
+    try {
+      final queryParams = {
+        'orderID': orderID,
+        'truckID': truckID.toString(),
+      };
+
+      print('📤 Assigning truck $truckID to order $orderID');
+
+      final response = await _apiClient.put(
+        ApiConstants.assignTruck,
+        queryParams: queryParams,
+        requiresAuth: true,
+      );
+
+      print('📥 Assign truck response: ${response['statusCode']}');
+
+      return AssignTruckResponse.fromJson(response);
+    } catch (e) {
+      print('❌ Assign Truck Error: $e');
+      rethrow;
+    }
+  }
+
+  // LIST RMOOC METHOD
+  /// Get list of available rmooc
+  Future<RmoocListResponse> getRmoocList({
+    String order = 'asc',
+    String sortBy = 'id',
+    int pageSize = 30,
+    int pageNumber = 1,
+    String? keySearch,
+  }) async {
+    try {
+      final queryParams = {
+        'order': order,
+        'sortBy': sortBy,
+        'pageSize': pageSize.toString(),
+        'pageNumber': pageNumber.toString(),
+      };
+
+      if (keySearch != null && keySearch.isNotEmpty) {
+        queryParams['keySearch'] = keySearch;
+      }
+
+      print('📤 Fetching rmooc list with params: $queryParams');
+
+      final response = await _apiClient.get(
+        ApiConstants.listRmoocs,
+        queryParams: queryParams,
+        requiresAuth: true,
+      );
+
+      return RmoocListResponse.fromJson(response);
+    } catch (e) {
+      print('❌ Get Rmooc List Error: $e');
+      rethrow;
+    }
+  }
+
+  /// Assign rmooc to order
+  Future<AssignRmoocResponse> assignRmoocToOrder({
+    required String orderID,
+    required int rmoocID,
+  }) async {
+    try {
+      final queryParams = {
+        'orderID': orderID,
+        'rmoocID': rmoocID.toString(),
+      };
+
+      print('📤 Assigning rmooc $rmoocID to order $orderID');
+
+      final response = await _apiClient.put(
+        ApiConstants.assignRmooc,
+        queryParams: queryParams,
+        requiresAuth: true,
+      );
+
+      print('📥 Assign rmooc response: ${response['statusCode']}');
+
+      return AssignRmoocResponse.fromJson(response);
+    } catch (e) {
+      print('❌ Assign Rmooc Error: $e');
       rethrow;
     }
   }

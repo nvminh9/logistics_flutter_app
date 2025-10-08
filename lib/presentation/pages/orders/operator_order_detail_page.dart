@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nalogistics_app/presentation/widgets/dialogs/driver_selection_dialog.dart';
+import 'package:nalogistics_app/presentation/widgets/dialogs/rmooc_selection_dialog.dart';
+import 'package:nalogistics_app/presentation/widgets/dialogs/truck_selection_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
@@ -101,7 +103,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Đơn hàng #${widget.orderID} đã chuyển sang trạng thái "Đang xử lý"',
+                      'Đơn hàng ${widget.orderID} đã chuyển sang trạng thái "Đang xử lý"',
                       style: const TextStyle(fontSize: 13),
                     ),
                   ],
@@ -219,7 +221,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                 _buildDialogInfoRow(
                   icon: Icons.badge,
                   label: 'Mã đơn',
-                  value: '#${widget.orderID}',
+                  value: '${widget.orderID}',
                 ),
                 const SizedBox(height: 12),
                 _buildDialogInfoRow(
@@ -629,7 +631,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '#${widget.orderID}',
+                    '${widget.orderID}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 28,
@@ -951,7 +953,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     );
   }
 
-  // Thêm method mới để show dialog
+  // Thêm method mới để show dialog chọn driver
   void _showDriverSelectionDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -959,28 +961,323 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     );
   }
 
+  // Thêm method mới để show dialog chọn truck
+  void _showTruckSelectionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const TruckSelectionDialog(),
+    );
+  }
+
+  // Thêm method mới để show dialog chọn rmooc
+  void _showRmoocSelectionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const RmoocSelectionDialog(),
+    );
+  }
+
   Widget _buildVehicleCard(OperatorOrderDetailModel order) {
+    final hasTruck = order.truckId != null && order.truckNo.isNotEmpty;
+    final hasRmooc = order.rmoocId != null && order.rmoocNo.isNotEmpty;
+
     return _buildInfoCard(
       title: 'Thông tin phương tiện',
       icon: Icons.local_shipping,
       color: AppColors.containerOrange,
       children: [
-        _buildVehicleInfo(
-          icon: Icons.local_shipping,
-          label: 'Biển số xe',
-          value: order.truckNo,
-          // id: order.truckId.toString(),
-        ),
-        const SizedBox(height: 12),
-        _buildVehicleInfo(
-          icon: Icons.rv_hookup,
-          label: 'Rơ moóc',
-          value: order.rmoocNo,
-          // id: order.rmoocId.toString(),
-        ),
+        if (hasTruck) ...[
+          // Có xe - hiển thị thông tin
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.containerOrange.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.containerOrange.withOpacity(0.2),
+              ),
+            ),
+            child: Row(
+              children: [
+                // Truck info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        order.truckNo,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      if (order.truckId != null) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.local_shipping,
+                              size: 14,
+                              color: AppColors.secondaryText,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Biển số xe',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: AppColors.secondaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // Change truck button
+                IconButton(
+                  onPressed: () => _showTruckSelectionDialog(context),
+                  icon: const Icon(Icons.edit),
+                  color: AppColors.containerOrange,
+                  tooltip: 'Thay đổi xe',
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.containerOrange.withOpacity(0.1),
+                    padding: const EdgeInsets.all(12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ] else ...[
+          // Chưa có truck - hiển thị nút chọn
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.sectionBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.hintText.withOpacity(0.2),
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.local_shipping_outlined,
+                  size: 48,
+                  color: AppColors.hintText.withOpacity(0.5),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Chưa chọn xe',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Nhấn nút bên dưới để chọn xe cho đơn hàng',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showDriverSelectionDialog(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.containerOrange,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(
+                      Icons.local_shipping_sharp,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    label: const Text(
+                      'Chọn xe',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
+        // Nếu có Rmooc
+        if (hasRmooc) ...[
+          // Có rmooc - hiển thị thông tin
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.containerOrange.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.containerOrange.withOpacity(0.2),
+              ),
+            ),
+            child: Row(
+              children: [
+                // Rmooc info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        order.rmoocNo,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      if (order.rmoocId != null) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.rv_hookup,
+                              size: 14,
+                              color: AppColors.secondaryText,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Biển số Rơ-mooc',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: AppColors.secondaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // Change truck button
+                IconButton(
+                  onPressed: () => _showRmoocSelectionDialog(context),
+                  icon: const Icon(Icons.edit),
+                  color: AppColors.containerOrange,
+                  tooltip: 'Thay đổi Rơ-mooc',
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.containerOrange.withOpacity(0.1),
+                    padding: const EdgeInsets.all(12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ] else ...[
+          // Chưa có rmooc - hiển thị nút chọn
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.sectionBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.hintText.withOpacity(0.2),
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.rv_hookup_outlined,
+                  size: 48,
+                  color: AppColors.hintText.withOpacity(0.5),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Chưa chọn Rơ-mooc',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Nhấn nút bên dưới để chọn Rơ-mooc cho đơn hàng',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showRmoocSelectionDialog(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.containerOrange,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(
+                      Icons.rv_hookup_sharp,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    label: const Text(
+                      'Chọn Rơ-mooc',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
+
+  // Widget _buildVehicleCard(OperatorOrderDetailModel order) {
+  //   return _buildInfoCard(
+  //     title: 'Thông tin phương tiện',
+  //     icon: Icons.local_shipping,
+  //     color: AppColors.containerOrange,
+  //     children: [
+  //       _buildVehicleInfo(
+  //         icon: Icons.local_shipping,
+  //         label: 'Biển số xe',
+  //         value: order.truckNo,
+  //         // id: order.truckId.toString(),
+  //       ),
+  //       const SizedBox(height: 12),
+  //       _buildVehicleInfo(
+  //         icon: Icons.rv_hookup,
+  //         label: 'Rơ moóc',
+  //         value: order.rmoocNo,
+  //         // id: order.rmoocId.toString(),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildLocationCard(OperatorOrderDetailModel order) {
     return _buildInfoCard(

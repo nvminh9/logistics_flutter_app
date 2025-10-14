@@ -194,11 +194,9 @@ class OperatorOrderDetailController extends BaseController {
     }
   }
 
-  // Thêm vào OperatorOrderDetailController class
-
-// ============================================
-// IMAGE UPLOAD STATE & METHODS
-// ============================================
+  // ============================================
+  // IMAGE UPLOAD STATE & METHODS
+  // ============================================
 
   List<PendingImageModel> _pendingImages = [];
   bool _isUploadingImages = false;
@@ -994,12 +992,46 @@ class OperatorOrderDetailController extends BaseController {
       print('   Changes detected: $_hasUnsavedChanges');
 
       // Prepare order data for update
-      final orderData = _orderDetail!.toJson();
+      // final orderDTO = _orderDetail!.toJson();
+      final Map<String, dynamic> orderDTO = {
+        "OrderDate": _orderDetail!.orderDate.toIso8601String(),
+        "CustomerId": _orderDetail!.customerId,
+        "CustomerName": _orderDetail!.customerName,
+        "DriverId": _orderDetail!.driverId,
+        "driverName": _orderDetail!.driverName,
+        "TruckId": _orderDetail!.truckId,
+        "TruckNo": _orderDetail!.truckNo,
+        "RmoocId": _orderDetail!.rmoocId,
+        "RmoocNo": _orderDetail!.rmoocNo,
+        "ContainerNo": _orderDetail!.containerNo,
+        "ContainerType": _orderDetail!.containerType,
+        "BillBookingNo": _orderDetail!.billBookingNo,
+        "FromLocationID": _orderDetail!.fromLocationID,
+        "FromWhereID": _orderDetail!.fromWhereID,
+        "ToLocationID": _orderDetail!.toLocationID,
+        "FromLocationName": _orderDetail!.fromLocationName,
+        "FromWhereName": _orderDetail!.fromWhereName,
+        "ToLocationName": _orderDetail!.toLocationName,
+        "Status": _orderDetail!.status,
+        "CreatedDate": _orderDetail!.createdDate.toIso8601String(),
+        "OrderLineList": _orderDetail!.orderLineList1.map((e) => {
+          "OrderLineId": e.orderLineId,
+          "itemID": e.itemID,
+          "itemName": e.orderLineItem.itemName,
+          "itemDescription": e.itemDescription,
+          "fixedPrice": e.orderLineItem.fixedPrice,
+          "itemCost": e.itemCost.toInt(),
+          "hasInvoice": e.hasInvoice,
+          "invoiceNo": e.invoiceNo,
+          "invoiceName": e.invoiceName,
+          "isActive": e.isActive
+        }).toList(),
+      };
 
       // Call API
       final response = await _orderRepository.updateOrder(
         orderId: _currentOrderID!,
-        orderData: orderData,
+        orderDTO: orderDTO,
       );
 
       if (response.isSuccess) {

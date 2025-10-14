@@ -417,15 +417,15 @@ class OrderRepository implements IOrderRepository {
   /// Update order with modified data
   Future<UpdateOrderResponse> updateOrder({
     required String orderId,
-    required Map<String, dynamic> orderData,
+    required Map<String, dynamic> orderDTO,
   }) async {
     try {
       print('📤 Updating order $orderId');
-      print('   Data keys: ${orderData.keys.join(", ")}');
+      print('   Data keys: ${orderDTO.keys.join(", ")}');
 
       final response = await _apiClient.put(
         ApiConstants.getUpdateOrderUrl(orderId),
-        body: orderData,
+        body: orderDTO,
         requiresAuth: true,
       );
 

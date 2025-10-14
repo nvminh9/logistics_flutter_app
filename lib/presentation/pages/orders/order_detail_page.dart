@@ -1,4 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:nalogistics_app/data/models/order/order_detail_api_model.dart';
+import 'package:nalogistics_app/data/models/order/order_image_model.dart';
+import 'package:nalogistics_app/presentation/widgets/order/driver_add_images_section.dart';
 import 'package:provider/provider.dart';
 import 'package:nalogistics_app/core/constants/strings.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
@@ -316,6 +320,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
           }
 
           final order = controller.orderDetail;
+
           if (order == null) {
             return const Center(
               child: Text('Không tìm thấy thông tin đơn hàng'),
@@ -343,6 +348,14 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
                       const SizedBox(height: 16),
                       _buildVehicleCard(order),
                       const SizedBox(height: 16),
+                      // Driver Add Images Section
+                      const DriverAddImagesSection(),
+                      // Existing images
+                      if (order.orderImageList.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        _buildImagesCard(order),
+                      ],
+                      const SizedBox(height: 16),
                       _buildTimelineCard(order),
                       const SizedBox(height: 24),
                       _buildActionButtons(order),
@@ -355,6 +368,195 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
           );
         },
       ),
+    );
+  }
+
+  // Helper widgets
+  Widget _buildInfoCard({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [AppColors.cardShadow],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  void _showImageDialog(OrderImageModel image) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.7,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(5),
+                child: CachedNetworkImage(
+                  imageUrl: image.url,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    image.descrip,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    DateFormatter.formatDateTime(image.created),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageItem(OrderImageModel image) {
+    return GestureDetector(
+      onTap: () => _showImageDialog(image),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.sectionBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.hintText.withOpacity(0.2),
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              CachedNetworkImage(
+                imageUrl: image.url,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                errorWidget: (context, url, error) => const Icon(
+                  Icons.error,
+                  color: AppColors.statusError,
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.7),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: Text(
+                    image.descrip,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImagesCard(OrderDetailModel order) {
+    // final images = order.activeImages;
+    final images = order.orderImageList;
+
+    return _buildInfoCard(
+      title: 'Hình ảnh đã tải lên', // ⭐ Changed title
+      icon: Icons.photo_library,  // ⭐ Changed icon
+      color: AppColors.portGrey,
+      children: [
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.2,
+          ),
+          itemCount: images.length,
+          itemBuilder: (context, index) {
+            final image = images[index];
+            return _buildImageItem(image);
+          },
+        ),
+      ],
     );
   }
 
@@ -384,7 +586,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '#${order.orderID}',
+                    '${order.orderID}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -474,8 +676,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
           const SizedBox(height: 12),
           _buildInfoRow(
             icon: Icons.calendar_today,
-            label: 'Ngày đặt hàng',
-            value: DateFormatter.formatDateTime(order.orderDate),
+            label: 'Ngày giao hàng',
+            value: DateFormatter.formatDate(order.orderDate),
           ),
         ],
       ),
@@ -704,7 +906,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
               Expanded(
                 child: _buildVehicleInfo(
                   icon: Icons.local_shipping,
-                  label: 'Xe đầu kéo',
+                  label: 'Biển số xe',
                   value: order.truckNo,
                   color: AppColors.maritimeBlue,
                 ),
@@ -714,7 +916,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
           const SizedBox(height: 12),
           _buildVehicleInfo(
             icon: Icons.rv_hookup,
-            label: 'Rơ moóc',
+            label: 'Biển số Rơ-mooc',
             value: order.rmoocNo,
             color: AppColors.oceanTeal,
           ),
@@ -749,7 +951,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 14,
                   color: color,
                   fontWeight: FontWeight.w500,
                 ),
@@ -760,7 +962,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
           Text(
             value,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: 17,
               fontWeight: FontWeight.w600,
               color: AppColors.primaryText,
             ),
@@ -943,7 +1145,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
               Text(
                 label,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 14,
                   color: AppColors.secondaryText,
                 ),
               ),
@@ -951,7 +1153,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
               Text(
                 value,
                 style: const TextStyle(
-                  fontSize: 15,
+                  fontSize: 17,
                   fontWeight: FontWeight.w600,
                   color: AppColors.primaryText,
                 ),

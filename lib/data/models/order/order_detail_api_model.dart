@@ -1,4 +1,5 @@
 import 'package:nalogistics_app/core/base/base_model.dart';
+import 'package:nalogistics_app/data/models/order/order_image_model.dart';
 import 'package:nalogistics_app/shared/enums/order_status_enum.dart';
 
 class OrderDetailResponse extends BaseModel {
@@ -45,6 +46,7 @@ class OrderDetailModel extends BaseModel {
   final String rmoocNo;
   final int status;
   final DateTime orderDate;
+  final List<OrderImageModel> orderImageList;
 
   OrderDetailModel({
     required this.orderID,
@@ -57,6 +59,7 @@ class OrderDetailModel extends BaseModel {
     required this.rmoocNo,
     required this.status,
     required this.orderDate,
+    this.orderImageList = const [],
   });
 
   factory OrderDetailModel.fromJson(Map<String, dynamic> json) {
@@ -71,6 +74,10 @@ class OrderDetailModel extends BaseModel {
       rmoocNo: json['rmoocNo'] ?? '',
       status: json['status'] ?? 0,
       orderDate: DateTime.tryParse(json['orderDate'] ?? '') ?? DateTime.now(),
+      orderImageList: (json['orderImageList'] as List<dynamic>?)
+          ?.map((item) => OrderImageModel.fromJson(item))
+          .toList() ??
+          [],
     );
   }
 
@@ -92,4 +99,8 @@ class OrderDetailModel extends BaseModel {
 
   // Convert status to enum
   OrderStatus get orderStatus => OrderStatusExtension.fromValue(status);
+
+  List<OrderImageModel> get activeImages {
+    return orderImageList.where((img) => img.isActive).toList();
+  }
 }

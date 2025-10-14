@@ -23,7 +23,7 @@ class _RoleBasedMainNavigationState extends State<RoleBasedMainNavigation> {
 
   // ⭐ Pages cho Driver
   final List<Widget> _driverPages = [
-    const HomePage(),
+    // const HomePage(),
     const OrderListWithTabsPage(),
     const ProfilePage(),
   ];
@@ -105,9 +105,9 @@ class _RoleBasedMainNavigationState extends State<RoleBasedMainNavigation> {
     } else {
       // Driver - 3 tabs
       return [
-        _buildNavItem(0, Icons.home_rounded, AppStrings.tabHome),
-        _buildNavItem(1, Icons.assignment_rounded, AppStrings.tabOrders),
-        _buildNavItem(2, Icons.person_rounded, AppStrings.tabProfile),
+        // _buildNavItem(0, Icons.home_rounded, AppStrings.tabHome),
+        _buildNavItem(0, Icons.assignment_rounded, AppStrings.tabOrders),
+        _buildNavItem(1, Icons.person_rounded, AppStrings.tabProfile),
       ];
     }
   }

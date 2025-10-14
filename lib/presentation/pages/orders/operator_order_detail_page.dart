@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nalogistics_app/data/models/order/order_image_model.dart';
 import 'package:nalogistics_app/presentation/widgets/dialogs/driver_selection_dialog.dart';
 import 'package:nalogistics_app/presentation/widgets/dialogs/rmooc_selection_dialog.dart';
 import 'package:nalogistics_app/presentation/widgets/dialogs/truck_selection_dialog.dart';
@@ -11,7 +12,7 @@ import 'package:nalogistics_app/data/models/order/operator_order_detail_model.da
 import 'package:nalogistics_app/presentation/controllers/operator_order_detail_controller.dart';
 import 'package:nalogistics_app/presentation/widgets/common/app_bar_widget.dart';
 import 'package:nalogistics_app/shared/enums/order_status_enum.dart';
-import 'package:nalogistics_app/presentation/widgets/order/add_images_section.dart';
+import 'package:nalogistics_app/presentation/widgets/order/operator_add_images_section.dart';
 
 class OperatorOrderDetailPage extends StatefulWidget {
   final String orderID;
@@ -378,6 +379,15 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
       floatingActionButton: Consumer<OperatorOrderDetailController>(
         builder: (context, controller, child) {
           final order = controller.orderDetail;
+          final hasChanges = controller.hasUnsavedChanges;
+          // final isUpdating = controller.isUpdatingOrder;
+
+          // if (order == null || hasChanges) {
+          //   return const SizedBox.shrink();
+          // }
+          if (hasChanges) {
+            return const SizedBox.shrink();
+          }
 
           // Chỉ hiện nút khi order có status Pending
           if (order?.orderStatus == OrderStatus.pending &&
@@ -874,16 +884,18 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                 ),
 
                 // Change driver button
-                IconButton(
-                  onPressed: () => _showDriverSelectionDialog(context),
-                  icon: const Icon(Icons.edit),
-                  color: AppColors.oceanTeal,
-                  tooltip: 'Thay đổi tài xế',
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.oceanTeal.withOpacity(0.1),
-                    padding: const EdgeInsets.all(12),
-                  ),
-                ),
+                if(order?.orderStatus == OrderStatus.pending) ...[
+                  IconButton(
+                    onPressed: () => _showDriverSelectionDialog(context),
+                    icon: const Icon(Icons.edit),
+                    color: AppColors.oceanTeal,
+                    tooltip: 'Thay đổi tài xế',
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.oceanTeal.withOpacity(0.1),
+                      padding: const EdgeInsets.all(12),
+                    ),
+                  )
+                ]
               ],
             ),
           ),
@@ -1043,16 +1055,18 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                 ),
 
                 // Change truck button
-                IconButton(
-                  onPressed: () => _showTruckSelectionDialog(context),
-                  icon: const Icon(Icons.edit),
-                  color: AppColors.containerOrange,
-                  tooltip: 'Thay đổi xe',
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.containerOrange.withOpacity(0.1),
-                    padding: const EdgeInsets.all(12),
+                if(order?.orderStatus == OrderStatus.pending) ...[
+                  IconButton(
+                    onPressed: () => _showTruckSelectionDialog(context),
+                    icon: const Icon(Icons.edit),
+                    color: AppColors.containerOrange,
+                    tooltip: 'Thay đổi xe',
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.containerOrange.withOpacity(0.1),
+                      padding: const EdgeInsets.all(12),
+                    ),
                   ),
-                ),
+                ]
               ],
             ),
           ),
@@ -1177,16 +1191,18 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                 ),
 
                 // Change truck button
-                IconButton(
-                  onPressed: () => _showRmoocSelectionDialog(context),
-                  icon: const Icon(Icons.edit),
-                  color: AppColors.containerOrange,
-                  tooltip: 'Thay đổi Rơ-mooc',
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.containerOrange.withOpacity(0.1),
-                    padding: const EdgeInsets.all(12),
+                if(order?.orderStatus == OrderStatus.pending) ...[
+                  IconButton(
+                    onPressed: () => _showRmoocSelectionDialog(context),
+                    icon: const Icon(Icons.edit),
+                    color: AppColors.containerOrange,
+                    tooltip: 'Thay đổi Rơ-mooc',
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.containerOrange.withOpacity(0.1),
+                      padding: const EdgeInsets.all(12),
+                    ),
                   ),
-                ),
+                ]
               ],
             ),
           ),

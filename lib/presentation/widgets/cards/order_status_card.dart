@@ -223,7 +223,7 @@ class OrderStatusCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          DateFormatter.formatDateTime(order.orderDate),
+                          DateFormatter.formatDate(order.orderDate),
                           style: const TextStyle(
                             fontSize: 13,
                             color: AppColors.secondaryText,

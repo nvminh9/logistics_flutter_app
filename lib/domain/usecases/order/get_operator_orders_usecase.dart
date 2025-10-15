@@ -1,5 +1,3 @@
-// lib/domain/usecases/order/get_operator_orders_usecase.dart
-
 import 'package:nalogistics_app/data/models/order/order_api_model.dart';
 import 'package:nalogistics_app/data/models/order/order_operator_model.dart';
 import 'package:nalogistics_app/data/repositories/interfaces/i_order_repository.dart';
@@ -20,8 +18,17 @@ class GetOperatorOrdersUseCase {
     int pageNumber = 1,
     String? fromDate,
     String? toDate,
+    String? searchKey,        // ⭐ NEW
   }) async {
     try {
+      print('🔍 GetOperatorOrdersUseCase executing...');
+      if (fromDate != null) {
+        print('   📅 From: $fromDate');
+      }
+      if (toDate != null) {
+        print('   📅 To: $toDate');
+      }
+
       // Gọi API Operator
       final response = await _orderRepository.getOrdersForOperator(
         order: order,
@@ -30,6 +37,8 @@ class GetOperatorOrdersUseCase {
         pageNumber: pageNumber,
         fromDate: fromDate,
         toDate: toDate,
+        searchKey: searchKey,
+        status: filterStatus?.value,
       );
 
       if (!response.isSuccess || response.data == null) {
@@ -63,6 +72,7 @@ class GetOperatorOrdersUseCase {
     int pageNumber = 1,
     String? fromDate,
     String? toDate,
+    // String? searchKey,        // ⭐ NEW
   }) async {
     try {
       final response = await _orderRepository.getOrdersForOperator(
@@ -72,6 +82,8 @@ class GetOperatorOrdersUseCase {
         pageNumber: pageNumber,
         fromDate: fromDate,
         toDate: toDate,
+        // searchKey: searchKey,
+        // status: filterStatus?.value,
       );
 
       if (!response.isSuccess || response.data == null) {

@@ -18,11 +18,14 @@ abstract class IOrderRepository {
   // DRIVER ROLE METHODS
   // ========================================
 
+  // ⭐ UPDATED: Add search parameters
   Future<OrderListResponse> getOrdersForDriver({
     String order = 'desc',
     String sortBy = 'id',
     int pageSize = 13,
     int pageNumber = 1,
+    String? searchKey,
+    int? status,
   });
 
   Future<OrderDetailResponse> getOrderDetail({
@@ -38,6 +41,7 @@ abstract class IOrderRepository {
   // OPERATOR ROLE METHODS
   // ========================================
 
+  // ⭐ UPDATED: Add search parameters
   Future<OperatorOrderListResponse> getOrdersForOperator({
     String order = 'asc',
     String sortBy = 'id',
@@ -45,6 +49,8 @@ abstract class IOrderRepository {
     int pageNumber = 1,
     String? fromDate,
     String? toDate,
+    String? searchKey,
+    int? status,
   });
 
   Future<OperatorOrderDetailResponse> getOperatorOrderDetail({

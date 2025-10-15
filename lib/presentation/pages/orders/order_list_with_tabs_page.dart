@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nalogistics_app/core/utils/date_formatter.dart';
+import 'package:nalogistics_app/presentation/widgets/dialogs/date_filter_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
 import 'package:nalogistics_app/presentation/controllers/order_controller.dart';
@@ -22,6 +24,10 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
   late OrderController _orderController;
   late AuthController _authController;
 
+  // ⭐ NEW: Search controller
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearchBarVisible = false;
+
   @override
   void initState() {
     super.initState();
@@ -41,12 +47,67 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();  // ⭐ NEW
     super.dispose();
   }
 
   Future<void> _loadAllTabsData() async {
     print('📱 Loading all tabs for role: ${_authController.userRole.displayName}');
     await _orderController.loadInitialData();
+  }
+
+  // ⭐ NEW: Handle search
+  void _handleSearch(String query) {
+    _orderController.searchOrders(query);
+  }
+
+  // ⭐ NEW: Clear search
+  void _clearSearch() {
+    _searchController.clear();
+    _orderController.clearSearch();
+    _orderController.refreshAllTabs();
+    setState(() {
+      _isSearchBarVisible = false;
+    });
+  }
+
+  // ⭐ NEW: Toggle search bar
+  void _toggleSearchBar() {
+    setState(() {
+      _isSearchBarVisible = !_isSearchBarVisible;
+      if (!_isSearchBarVisible) {
+        _clearSearch();
+      }
+    });
+  }
+
+  // ⭐ NEW: Show date filter dialog
+  Future<void> _showDateFilterDialog() async {
+    final result = await showDialog<Map<String, DateTime?>>(
+      context: context,
+      builder: (context) => DateFilterDialog(
+        initialFromDate: _orderController.fromDate,
+        initialToDate: _orderController.toDate,
+      ),
+    );
+
+    if (result != null) {
+      final fromDate = result['fromDate'];
+      final toDate = result['toDate'];
+
+      await _orderController.applyDateFilter(fromDate, toDate);
+    }
+  }
+
+  // ⭐ NEW: Clear all filters
+  void _clearAllFilters() {
+    _searchController.clear();
+    _orderController.clearSearch();
+    _orderController.clearDateFilter();
+    setState(() {
+      _isSearchBarVisible = false;
+    });
+    _orderController.refreshAllTabs();
   }
 
   @override
@@ -59,40 +120,80 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
         return Scaffold(
           backgroundColor: AppColors.primaryBackground,
           appBar: AppBar(
-            title: Row(
-              children: [
-                const Text(
-                  'Danh sách đơn hàng',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Color(userRole.colorValue).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    userRole.displayName,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ],
+            title: _isSearchBarVisible
+                ? _buildSearchField()  // ⭐ NEW
+                : Row(
+                    children: [
+                      const Text(
+                        'Danh sách đơn hàng',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Color(userRole.colorValue).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          userRole.displayName,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
             ),
             backgroundColor: AppColors.maritimeBlue,
             elevation: 0,
             actions: [
+              // ⭐ NEW: Date filter button (chỉ cho Operator)
+              if (userRole.isOperator) ...[
+                Consumer<OrderController>(
+                  builder: (context, controller, child) {
+                    return Stack(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.calendar_month),
+                          onPressed: _showDateFilterDialog,
+                          tooltip: 'Lọc theo ngày',
+                        ),
+                        if (controller.hasDateFilter)
+                          Positioned(
+                            right: 8,
+                            top: 8,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.orange,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+
+              // Search button
+              IconButton(
+                icon: Icon(_isSearchBarVisible ? Icons.close : Icons.search),
+                onPressed: _toggleSearchBar,
+                tooltip: _isSearchBarVisible ? 'Đóng tìm kiếm' : 'Tìm kiếm',
+              ),
+
+              // Refresh button
               Consumer<OrderController>(
                 builder: (context, controller, child) {
                   return IconButton(
@@ -187,15 +288,222 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
               }).toList(),
             ),
           ),
-          body: TabBarView(
-            controller: _tabController,
-            children: activeStatuses.map((status) {
-              return _buildOrderList(status, userRole);
-            }).toList(),
+          body: Column(
+            children: [
+              // ⭐ UPDATED: Filter indicators
+              Consumer<OrderController>(
+                builder: (context, controller, child) {
+                  final hasFilters = controller.isSearching || controller.hasDateFilter;
+
+                  if (!hasFilters) return const SizedBox.shrink();
+
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    color: AppColors.statusInTransit.withOpacity(0.1),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.filter_alt,
+                              size: 18,
+                              color: AppColors.statusInTransit,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Bộ lọc đang áp dụng:',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.statusInTransit,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const Spacer(),
+                            TextButton.icon(
+                              onPressed: _clearAllFilters,
+                              icon: const Icon(
+                                Icons.clear_all,
+                                size: 16,
+                              ),
+                              label: const Text('Xóa tất cả'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.statusError,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            // Search filter chip
+                            if (controller.isSearching)
+                              _buildFilterChip(
+                                icon: Icons.search,
+                                label: 'Tìm kiếm: "${controller.searchQuery}"',
+                                onRemove: () {
+                                  _searchController.clear();
+                                  controller.clearSearch();
+                                  controller.refreshAllTabs();
+                                },
+                              ),
+
+                            // Date filter chip
+                            if (controller.hasDateFilter) _buildFilterChip(
+                              icon: Icons.calendar_month,
+                              label: _getDateFilterLabel(controller),
+                              onRemove: () {
+                                controller.clearDateFilter();
+                                controller.refreshAllTabs();
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              // Tab views
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: activeStatuses.map((status) {
+                    return _buildOrderList(status, userRole);
+                  }).toList(),
+                ),
+              ),
+            ],
           ),
+          // body: TabBarView(
+          //   controller: _tabController,
+          //   children: activeStatuses.map((status) {
+          //     return _buildOrderList(status, userRole);
+          //   }).toList(),
+          // ),
         );
       },
     );
+  }
+
+  // ⭐ NEW: Build filter chip
+  Widget _buildFilterChip({
+    required IconData icon,
+    required String label,
+    required VoidCallback onRemove,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.maritimeBlue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.maritimeBlue.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 14,
+            color: AppColors.maritimeBlue,
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.maritimeBlue,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 4),
+          InkWell(
+            onTap: onRemove,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              child: const Icon(
+                Icons.close,
+                size: 14,
+                color: AppColors.maritimeBlue,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ⭐ NEW: Build search field
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchController,
+      autofocus: true,
+      style: const TextStyle(color: Colors.black),
+      decoration: InputDecoration(
+        hintText: 'Tìm theo mã đơn hàng...',
+        hintStyle: TextStyle(color: Colors.black.withOpacity(0.7)),
+        border: InputBorder.none,
+        suffixIcon: _searchController.text.isNotEmpty
+            ? IconButton(
+          icon: const Icon(Icons.clear, color: Colors.black),
+          onPressed: () {
+            _searchController.clear();
+            _handleSearch('');
+          },
+        )
+            : null,
+      ),
+      onChanged: (value) {
+        // Debounce search
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (value == _searchController.text) {
+            _handleSearch(value);
+          }
+        });
+      },
+      onSubmitted: _handleSearch,
+    );
+  }
+
+  // ⭐ NEW: Get date filter label
+  String _getDateFilterLabel(OrderController controller) {
+    final fromDate = controller.fromDate;
+    final toDate = controller.toDate;
+
+    if (fromDate != null && toDate != null) {
+      // Check if same day
+      if (fromDate.year == toDate.year &&
+          fromDate.month == toDate.month &&
+          fromDate.day == toDate.day) {
+        return 'Ngày: ${DateFormatter.formatDate(fromDate)}';
+      }
+
+      return '${DateFormatter.formatDate(fromDate)} - ${DateFormatter.formatDate(toDate)}';
+    } else if (fromDate != null) {
+      return 'Từ: ${DateFormatter.formatDate(fromDate)}';
+    } else if (toDate != null) {
+      return 'Đến: ${DateFormatter.formatDate(toDate)}';
+    }
+
+    return 'Lọc theo ngày';
   }
 
   Widget _buildOrderList(OrderStatus status, UserRole userRole) {

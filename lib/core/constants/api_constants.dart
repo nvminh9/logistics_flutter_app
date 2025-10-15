@@ -204,4 +204,76 @@ class ApiConstants {
   static String getUserDetailUrl(String username) {
     return '$userDetail?username=$username';
   }
+
+  // Build URL with search for Driver
+  static String getDriverOrdersUrl({
+    String? searchKey,
+    int? status,
+    String order = 'desc',
+    String sortBy = 'id',
+    int pageSize = 13,
+    int pageNumber = 1,
+  }) {
+    final params = <String, String>{
+      'order': order,
+      'sortBy': sortBy,
+      'pageSize': pageSize.toString(),
+      'pageNumber': pageNumber.toString(),
+    };
+
+    if (searchKey != null && searchKey.isNotEmpty) {
+      params['searchKey'] = searchKey;
+    }
+
+    if (status != null) {
+      params['status'] = status.toString();
+    }
+
+    final queryString = params.entries
+        .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+        .join('&');
+
+    return '$driverOrders?$queryString';
+  }
+
+  // Build URL with search for Operator
+  static String getOperatorOrdersUrl({
+    String? searchKey,
+    int? status,
+    String order = 'asc',
+    String sortBy = 'id',
+    int pageSize = 30,
+    int pageNumber = 1,
+    String? fromDate,
+    String? toDate,
+  }) {
+    final params = <String, String>{
+      'order': order,
+      'sortBy': sortBy,
+      'pageSize': pageSize.toString(),
+      'pageNumber': pageNumber.toString(),
+    };
+
+    if (searchKey != null && searchKey.isNotEmpty) {
+      params['searchKey'] = searchKey;
+    }
+
+    if (status != null) {
+      params['status'] = status.toString();
+    }
+
+    if (fromDate != null) {
+      params['fromDate'] = fromDate;
+    }
+
+    if (toDate != null) {
+      params['toDate'] = toDate;
+    }
+
+    final queryString = params.entries
+        .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+        .join('&');
+
+    return '$operatorOrders?$queryString';
+  }
 }

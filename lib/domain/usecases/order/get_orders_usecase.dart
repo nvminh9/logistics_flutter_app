@@ -13,6 +13,7 @@ class GetOrdersUseCase {
     String sortBy = 'id',
     int pageSize = 13,
     int pageNumber = 1,
+    String? searchKey,        // ⭐ NEW
   }) async {
     try {
       final response = await _orderRepository.getOrdersForDriver(
@@ -20,6 +21,8 @@ class GetOrdersUseCase {
         sortBy: sortBy,
         pageSize: pageSize,
         pageNumber: pageNumber,
+        searchKey: searchKey,
+        status: filterStatus?.value,
       );
 
       if (!response.isSuccess) {

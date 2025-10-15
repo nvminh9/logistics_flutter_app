@@ -897,7 +897,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
               Expanded(
                 child: _buildVehicleInfo(
                   icon: Icons.inventory_2_outlined,
-                  label: 'Container',
+                  label: 'Số Container',
                   value: order.containerNo,
                   color: AppColors.skyBlue,
                 ),

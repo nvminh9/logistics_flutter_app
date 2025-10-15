@@ -26,12 +26,42 @@ class OrderRepository implements IOrderRepository {
   // DRIVER ROLE METHODS
   // ========================================
 
+  // @override
+  // Future<OrderListResponse> getOrdersForDriver({
+  //   String order = 'desc',
+  //   String sortBy = 'id',
+  //   int pageSize = 13,
+  //   int pageNumber = 1,
+  // }) async {
+  //   try {
+  //     final queryParams = {
+  //       'order': order,
+  //       'sortBy': sortBy,
+  //       'pageSize': pageSize.toString(),
+  //       'pageNumber': pageNumber.toString(),
+  //     };
+  //
+  //     final response = await _apiClient.get(
+  //       ApiConstants.driverOrders,
+  //       queryParams: queryParams,
+  //       requiresAuth: true,
+  //     );
+  //
+  //     return OrderListResponse.fromJson(response);
+  //   } catch (e) {
+  //     print('❌ Driver Order Repository Error: $e');
+  //     rethrow;
+  //   }
+  // }
+
   @override
   Future<OrderListResponse> getOrdersForDriver({
     String order = 'desc',
     String sortBy = 'id',
     int pageSize = 13,
     int pageNumber = 1,
+    String? searchKey,      // ⭐ NEW
+    int? status,            // ⭐ NEW
   }) async {
     try {
       final queryParams = {
@@ -40,6 +70,17 @@ class OrderRepository implements IOrderRepository {
         'pageSize': pageSize.toString(),
         'pageNumber': pageNumber.toString(),
       };
+
+      // ⭐ Add search parameters
+      if (searchKey != null && searchKey.isNotEmpty) {
+        queryParams['searchKey'] = searchKey;
+      }
+
+      if (status != null) {
+        queryParams['status'] = status.toString();
+      }
+
+      print('📤 Driver fetching orders: $queryParams');
 
       final response = await _apiClient.get(
         ApiConstants.driverOrders,
@@ -106,6 +147,45 @@ class OrderRepository implements IOrderRepository {
   // OPERATOR ROLE METHODS
   // ========================================
 
+  // @override
+  // Future<OperatorOrderListResponse> getOrdersForOperator({
+  //   String order = 'asc',
+  //   String sortBy = 'id',
+  //   int pageSize = 30,
+  //   int pageNumber = 1,
+  //   String? fromDate,
+  //   String? toDate,
+  // }) async {
+  //   try {
+  //     final queryParams = {
+  //       'order': order,
+  //       'sortBy': sortBy,
+  //       'pageSize': pageSize.toString(),
+  //       'pageNumber': pageNumber.toString(),
+  //     };
+  //
+  //     if (fromDate != null) {
+  //       queryParams['fromDate'] = fromDate;
+  //     }
+  //     if (toDate != null) {
+  //       queryParams['toDate'] = toDate;
+  //     }
+  //
+  //     print('📤 Operator fetching orders: $queryParams');
+  //
+  //     final response = await _apiClient.get(
+  //       ApiConstants.operatorOrders,
+  //       queryParams: queryParams,
+  //       requiresAuth: true,
+  //     );
+  //
+  //     return OperatorOrderListResponse.fromJson(response);
+  //   } catch (e) {
+  //     print('❌ Operator Order Repository Error: $e');
+  //     rethrow;
+  //   }
+  // }
+
   @override
   Future<OperatorOrderListResponse> getOrdersForOperator({
     String order = 'asc',
@@ -114,6 +194,8 @@ class OrderRepository implements IOrderRepository {
     int pageNumber = 1,
     String? fromDate,
     String? toDate,
+    String? searchKey,
+    int? status,
   }) async {
     try {
       final queryParams = {
@@ -123,11 +205,21 @@ class OrderRepository implements IOrderRepository {
         'pageNumber': pageNumber.toString(),
       };
 
-      if (fromDate != null) {
-        queryParams['fromDate'] = fromDate;
+      // ⭐ Add date parameters
+      if (fromDate != null && fromDate.isNotEmpty) {
+        queryParams['fromDateStr'] = fromDate;  // ⭐ Changed to fromDateStr
       }
-      if (toDate != null) {
-        queryParams['toDate'] = toDate;
+      if (toDate != null && toDate.isNotEmpty) {
+        queryParams['toDateStr'] = toDate;      // ⭐ Changed to toDateStr
+      }
+
+      // Add search parameters
+      if (searchKey != null && searchKey.isNotEmpty) {
+        queryParams['searchKey'] = searchKey;
+      }
+
+      if (status != null) {
+        queryParams['status'] = status.toString();
       }
 
       print('📤 Operator fetching orders: $queryParams');

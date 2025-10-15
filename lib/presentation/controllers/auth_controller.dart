@@ -30,6 +30,10 @@ class AuthController extends BaseController {
   bool get isOperator => _userRole.isOperator;
   bool get hasFullAccess => _userRole.hasFullAccess;
 
+  // User ID storage
+  String? _userId;
+  String? get userId => _userId;
+
   AuthController() {
     _authRepository = AuthRepository();
     _loginUseCase = LoginUseCase(_authRepository);
@@ -89,6 +93,10 @@ class AuthController extends BaseController {
         print('⚠️ Warning: No role name in response');
       }
 
+      // ⭐ NEW: Try to extract user ID if available in response
+      // TODO: Update this when backend provides userId in login response
+      // For now, we'll need to call getUserDetail separately
+
       _isAuthenticated = true;
 
       setLoading(false);
@@ -113,6 +121,12 @@ class AuthController extends BaseController {
     }
   }
 
+  // ⭐ NEW: Method to set user ID (call this after getting user detail)
+  void setUserId(String? id) {
+    _userId = id;
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     try {
       setLoading(true);
@@ -125,6 +139,7 @@ class AuthController extends BaseController {
       _roleName = null;
       _userRole = UserRole.unknown;
       _isAuthenticated = false;
+      _userId = null; // Clear userId
 
       clearError();
       setLoading(false);
@@ -156,6 +171,10 @@ class AuthController extends BaseController {
         if (_roleName != null) {
           _userRole = UserRoleExtension.fromString(_roleName);
         }
+
+        // ⭐ NEW: Try to restore userId from storage if needed
+        // final driverData = await _storage.getObject(AppConstants.keyDriverData);
+        // _userId = driverData?['userId'];
       }
 
       notifyListeners();
@@ -183,8 +202,6 @@ class AuthController extends BaseController {
     clearError();
     notifyListeners();
   }
-
-
 
   @override
   void dispose() {

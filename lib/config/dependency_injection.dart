@@ -1,4 +1,5 @@
 import 'package:nalogistics_app/presentation/controllers/operator_order_detail_controller.dart';
+import 'package:nalogistics_app/presentation/controllers/profile_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
 import 'package:nalogistics_app/presentation/controllers/order_controller.dart';
@@ -17,6 +18,9 @@ class DependencyInjection {
     ),
     ChangeNotifierProvider<OperatorOrderDetailController>(
       create: (_) => OperatorOrderDetailController(),
+    ),
+    ChangeNotifierProvider<ProfileController>(
+      create: (_) => ProfileController(),
     ),
     // Các providers khác có thể thêm vào đây ...
   ];

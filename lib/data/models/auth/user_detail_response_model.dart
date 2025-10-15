@@ -1,8 +1,6 @@
 import 'package:nalogistics_app/core/base/base_model.dart';
 import 'package:nalogistics_app/data/models/auth/detail_driver_model.dart';
 import 'package:nalogistics_app/data/models/auth/detail_user_model.dart';
-import 'package:nalogistics_app/data/models/order/order_image_model.dart';
-import 'package:nalogistics_app/shared/enums/order_status_enum.dart';
 
 class UserDetailResponse extends BaseModel {
   final int statusCode;
@@ -37,9 +35,10 @@ class UserDetailResponse extends BaseModel {
   bool get isSuccess => statusCode == 200;
 }
 
+// ⭐ FIXED: Changed from Map to proper models
 class UserDetailModel extends BaseModel {
-  final Map<DetailUserModel, dynamic> detailUser;
-  final Map<DetailDriverModel, dynamic>? detailDriver;
+  final DetailUserModel detailUser;
+  final DetailDriverModel? detailDriver;  // ⭐ Changed from Map
   final int countOrderCompleted;
 
   UserDetailModel({
@@ -50,8 +49,10 @@ class UserDetailModel extends BaseModel {
 
   factory UserDetailModel.fromJson(Map<String, dynamic> json) {
     return UserDetailModel(
-      detailUser: json['detailUser'] ?? {},
-      detailDriver: json['detailDriver'] ?? '',
+      detailUser: DetailUserModel.fromJson(json['detailUser'] ?? {}),
+      detailDriver: json['detailDriver'] != null && json['detailDriver'] != ''
+          ? DetailDriverModel.fromJson(json['detailDriver'])
+          : null,
       countOrderCompleted: json['countOrderCompleted'] ?? 0,
     );
   }
@@ -59,8 +60,8 @@ class UserDetailModel extends BaseModel {
   @override
   Map<String, dynamic> toJson() {
     return {
-      'detailUser': detailUser,
-      'detailDriver': detailDriver,
+      'detailUser': detailUser.toJson(),
+      'detailDriver': detailDriver?.toJson(),
       'countOrderCompleted': countOrderCompleted,
     };
   }

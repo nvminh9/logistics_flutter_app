@@ -1,6 +1,6 @@
 import 'package:nalogistics_app/data/models/auth/login_request.dart';
 import 'package:nalogistics_app/data/models/auth/login_response.dart';
-import 'package:nalogistics_app/data/models/auth/user_detail_model.dart';
+import 'package:nalogistics_app/data/models/auth/user_detail_response_model.dart';
 import 'package:nalogistics_app/data/repositories/interfaces/i_auth_repository.dart';
 import 'package:nalogistics_app/data/services/api/api_client.dart';
 import 'package:nalogistics_app/data/services/local/storage_service.dart';

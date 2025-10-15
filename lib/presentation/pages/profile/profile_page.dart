@@ -1,14 +1,11 @@
-// lib/presentation/pages/profile/profile_page.dart (Updated)
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:nalogistics_app/core/constants/strings.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
 import 'package:nalogistics_app/core/utils/date_formatter.dart';
-import 'package:nalogistics_app/data/models/auth/driver_model.dart';
-import 'package:nalogistics_app/data/services/local/storage_service.dart';
-import 'package:nalogistics_app/core/constants/app_constants.dart';
+import 'package:nalogistics_app/data/models/auth/user_detail_response_model.dart';
+import 'package:nalogistics_app/data/repositories/implementations/auth_repository.dart';
 import 'package:nalogistics_app/presentation/routes/route_names.dart';
 import 'package:nalogistics_app/presentation/widgets/common/custom_button.dart';
 import 'package:nalogistics_app/presentation/widgets/common/app_bar_widget.dart';
@@ -23,8 +20,9 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStateMixin {
-  DriverModel? driver;
+  UserDetailModel? userDetail;
   bool isLoading = true;
+  String? error;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -33,7 +31,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
   void initState() {
     super.initState();
     _setupAnimations();
-    _loadDriverInfo();
+    _loadUserInfo();
   }
 
   void _setupAnimations() {
@@ -65,33 +63,35 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     super.dispose();
   }
 
-  bool _isDebugMode() {
-    bool isDebug = false;
-    assert(() {
-      isDebug = true;
-      return true;
-    }());
-    return isDebug;
-  }
+  Future<void> _loadUserInfo() async {
+    setState(() {
+      isLoading = true;
+      error = null;
+    });
 
-  Future<void> _loadDriverInfo() async {
-    setState(() => isLoading = true);
+    try {
+      final authController = Provider.of<AuthController>(context, listen: false);
+      final authRepo = AuthRepository();
 
-    await Future.delayed(const Duration(seconds: 1));
+      // Get current user ID from token/storage
+      // For now, using hardcoded ID - you should get this from your auth state
+      final userId = '21'; // TODO: Get from auth state
 
-    driver = DriverModel(
-      id: 'DRV001',
-      name: 'Nguyễn Văn Tài',
-      username: 'nguyenvantai',
-      email: 'nguyenvantai@example.com',
-      phone: '0901234567',
-      birthDate: DateTime(1985, 3, 15),
-      hometown: 'An Giang',
-      avatar: null,
-    );
+      final detail = await authRepo.getUserDetail(userID: userId);
 
-    setState(() => isLoading = false);
-    _animationController.forward();
+      setState(() {
+        userDetail = detail;
+        isLoading = false;
+      });
+
+      _animationController.forward();
+    } catch (e) {
+      setState(() {
+        error = e.toString();
+        isLoading = false;
+      });
+      print('❌ Load User Info Error: $e');
+    }
   }
 
   Future<void> _logout() async {
@@ -163,30 +163,24 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
+          : error != null
+          ? _buildErrorState()
           : FadeTransition(
         opacity: _fadeAnimation,
         child: SlideTransition(
           position: _slideAnimation,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
                 _buildProfileHeader(),
-                const SizedBox(height: 10),
-
-                // ⭐ Role Badge Display
+                const SizedBox(height: 16),
                 _buildRoleBadge(),
-                const SizedBox(height: 10),
-
+                const SizedBox(height: 16),
                 _buildStatsCards(),
-                const SizedBox(height: 10),
+                const SizedBox(height: 16),
                 _buildProfileInfo(),
-                const SizedBox(height: 10),
-
-                // ⭐ Permission Info (Debug)
-                if (_isDebugMode()) _buildPermissionInfo(),
-                if (_isDebugMode()) const SizedBox(height: 10),
-
+                const SizedBox(height: 16),
                 _buildLogoutButton(),
               ],
             ),
@@ -196,7 +190,122 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     );
   }
 
-  // ⭐ Role Badge Widget
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppColors.statusError,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Không thể tải thông tin',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryText,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error ?? 'Có lỗi xảy ra',
+              style: const TextStyle(
+                color: AppColors.secondaryText,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadUserInfo,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Thử lại'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.maritimeBlue,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileHeader() {
+    return Consumer<AuthController>(
+      builder: (context, authController, child) {
+        final role = authController.userRole;
+        final  displayName;
+        if (role.isDriver) {
+          displayName = userDetail?.detailDriver != null?['driverName'] ?? 'Tài xế'
+            : userDetail?.detailUser['fullName'] ?? 'Người dùng';
+        } else {
+          displayName = 'Người dùng';
+        }
+
+        final  userId;
+        if (role.isDriver) {
+          userId = userDetail?.detailDriver != null?['driverID']?.toString() ?? ''
+            : userDetail?.detailUser['userID']?.toString() ?? '';
+        } else {
+          userId = '';
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.maritimeDarkBlue,
+                  shape: BoxShape.circle,
+                ),
+                child: CircleAvatar(
+                  radius: 40,
+                  backgroundColor: AppColors.maritimeDarkBlue,
+                  child: Text(
+                    displayName.substring(0, 1).toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 28,
+                      color: AppColors.primaryBackground,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                displayName,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'ID: $userId',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black45.withOpacity(0.8),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildRoleBadge() {
     return Consumer<AuthController>(
       builder: (context, authController, child) {
@@ -288,165 +397,59 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     );
   }
 
-  // ⭐ Permission Info Widget (Debug Only)
-  Widget _buildPermissionInfo() {
+  Widget _buildStatsCards() {
     return Consumer<AuthController>(
       builder: (context, authController, child) {
         final role = authController.userRole;
 
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.blue.withOpacity(0.2),
-              width: 2,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        if (role.isDriver) {
+          return Row(
             children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.security,
-                    color: Colors.blue,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'PERMISSIONS (DEBUG)',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _buildPermissionItem('View Orders', role.canViewOrders),
-              _buildPermissionItem('Update Status', role.canUpdateOrderStatus),
-              _buildPermissionItem('Manage Drivers', role.canManageDrivers),
-              _buildPermissionItem('View Reports', role.canViewReports),
-              _buildPermissionItem('Manage Customers', role.canManageCustomers),
-              _buildPermissionItem('View All Orders', role.canViewAllOrders),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildPermissionItem(String label, bool hasPermission) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(
-            hasPermission ? Icons.check_circle : Icons.cancel,
-            size: 16,
-            color: hasPermission ? Colors.green : Colors.red,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: hasPermission ? AppColors.primaryText : AppColors.hintText,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileHeader() {
-    return Consumer<AuthController>(
-      builder: (context, authController, child) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: AppColors.maritimeDarkBlue,
-                  shape: BoxShape.circle,
-                ),
-                child: CircleAvatar(
-                  radius: 40,
-                  backgroundColor: AppColors.maritimeDarkBlue,
-                  child: driver?.avatar != null
-                      ? ClipOval(
-                    child: Image.network(
-                      driver!.avatar!,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                      : Text(
-                    driver?.name.substring(0, 1).toUpperCase() ?? 'T',
-                    style: const TextStyle(
-                      fontSize: 28,
-                      color: AppColors.primaryBackground,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+              Expanded(
+                child: _buildStatCard(
+                  icon: Icons.check_circle_rounded,
+                  title: 'Đơn hoàn thành',
+                  value: userDetail?.countOrderCompleted.toString() ?? '0',
+                  color: AppColors.statusDelivered,
                 ),
               ),
-              const SizedBox(height: 16),
-              Text(
-                driver?.name ?? '',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '@${driver?.username ?? ''}',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black45.withOpacity(0.8),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildStatCard(
+                  icon: Icons.local_shipping_rounded,
+                  title: 'Đơn hàng',
+                  value: '0', // Can be calculated if needed
+                  color: AppColors.statusInTransit,
                 ),
               ),
             ],
-          ),
-        );
+          );
+        } else {
+          // Operator stats
+          return Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  icon: Icons.assignment_rounded,
+                  title: 'Quản lý',
+                  value: 'Toàn quyền',
+                  color: AppColors.oceanTeal,
+                  isText: true,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildStatCard(
+                  icon: Icons.people_rounded,
+                  title: 'Tài xế',
+                  value: '0', // Can fetch from API
+                  color: AppColors.maritimeBlue,
+                ),
+              ),
+            ],
+          );
+        }
       },
-    );
-  }
-
-  Widget _buildStatsCards() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.local_shipping_rounded,
-            title: 'Đơn hàng',
-            value: '24',
-            color: AppColors.secondaryText,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.star_rounded,
-            title: 'Đánh giá',
-            value: '4.8',
-            color: AppColors.secondaryText,
-          ),
-        ),
-      ],
     );
   }
 
@@ -455,6 +458,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     required String title,
     required String value,
     required Color color,
+    bool isText = false,
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -478,7 +482,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
           Text(
             value,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: isText ? 14 : 20,
               fontWeight: FontWeight.bold,
               color: AppColors.primaryText,
             ),
@@ -489,6 +493,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
               fontSize: 12,
               color: AppColors.secondaryText,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -496,63 +501,133 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
   }
 
   Widget _buildProfileInfo() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.black26, width: 1),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [AppColors.cardShadow],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Thông tin cá nhân',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
+    return Consumer<AuthController>(
+      builder: (context, authController, child) {
+        final role = authController.userRole;
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: Colors.black26, width: 1),
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [AppColors.cardShadow],
           ),
-          const SizedBox(height: 20),
-          if (driver?.email?.isNotEmpty == true)
-            _buildInfoItem(
-              icon: Icons.email_rounded,
-              label: 'Email',
-              value: driver!.email!,
-              color: AppColors.secondaryText,
-            ),
-          if (driver?.phone?.isNotEmpty == true) ...[
-            const SizedBox(height: 16),
-            _buildInfoItem(
-              icon: Icons.phone_rounded,
-              label: AppStrings.phoneNumber,
-              value: driver!.phone!,
-              color: AppColors.secondaryText,
-            ),
-          ],
-          if (driver?.birthDate != null) ...[
-            const SizedBox(height: 16),
-            _buildInfoItem(
-              icon: Icons.cake_rounded,
-              label: AppStrings.birthDate,
-              value: DateFormatter.formatDate(driver!.birthDate!),
-              color: AppColors.secondaryText,
-            ),
-          ],
-          if (driver?.hometown?.isNotEmpty == true) ...[
-            const SizedBox(height: 16),
-            _buildInfoItem(
-              icon: Icons.location_on_rounded,
-              label: AppStrings.hometown,
-              value: driver!.hometown!,
-              color: AppColors.secondaryText,
-            ),
-          ],
-        ],
-      ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Thông tin cá nhân',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              if (role.isDriver) ..._buildDriverInfo()
+              else ..._buildOperatorInfo(),
+            ],
+          ),
+        );
+      },
     );
+  }
+
+  List<Widget> _buildDriverInfo() {
+    final driver = userDetail?.detailDriver;
+    if (driver == null) return [];
+
+    return [
+      _buildInfoItem(
+        icon: Icons.badge_rounded,
+        label: 'Mã tài xế',
+        value: driver['driverID']?.toString() ?? '',
+        color: AppColors.maritimeBlue,
+      ),
+      const SizedBox(height: 16),
+      _buildInfoItem(
+        icon: Icons.person_rounded,
+        label: 'Họ tên',
+        value: driver['driverName'] ?? '',
+        color: AppColors.maritimeBlue,
+      ),
+      const SizedBox(height: 16),
+      _buildInfoItem(
+        icon: Icons.phone_rounded,
+        label: 'Số điện thoại',
+        value: driver['phone'] ?? '',
+        color: AppColors.oceanTeal,
+      ),
+      const SizedBox(height: 16),
+      _buildInfoItem(
+        icon: Icons.location_on_rounded,
+        label: 'Địa chỉ',
+        value: driver['address'] ?? '',
+        color: AppColors.statusInTransit,
+      ),
+      const SizedBox(height: 16),
+      _buildInfoItem(
+        icon: Icons.credit_card_rounded,
+        label: 'Số GPLX',
+        value: driver['licenseNo'] ?? '',
+        color: AppColors.containerOrange,
+      ),
+      const SizedBox(height: 16),
+      _buildInfoItem(
+        icon: Icons.event_rounded,
+        label: 'Ngày hết hạn GPLX',
+        value: _formatExpireDate(driver['expireDate']),
+        color: AppColors.statusDelayed,
+      ),
+    ];
+  }
+
+  List<Widget> _buildOperatorInfo() {
+    final user = userDetail?.detailUser;
+    if (user == null) return [];
+
+    return [
+      _buildInfoItem(
+        icon: Icons.badge_rounded,
+        label: 'Mã người dùng',
+        value: user['userID']?.toString() ?? '',
+        color: AppColors.oceanTeal,
+      ),
+      const SizedBox(height: 16),
+      _buildInfoItem(
+        icon: Icons.person_rounded,
+        label: 'Họ tên',
+        value: user['fullName'] ?? '',
+        color: AppColors.oceanTeal,
+      ),
+      const SizedBox(height: 16),
+      _buildInfoItem(
+        icon: Icons.account_circle_rounded,
+        label: 'Tên đăng nhập',
+        value: user['userName'] ?? '',
+        color: AppColors.maritimeBlue,
+      ),
+    ];
+  }
+
+  String _formatExpireDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return 'Không có thông tin';
+
+    try {
+      // Parse "2026-12-1 00:00:00" format
+      final parts = dateStr.split(' ')[0].split('-');
+      if (parts.length == 3) {
+        final year = parts[0];
+        final month = parts[1].padLeft(2, '0');
+        final day = parts[2].padLeft(2, '0');
+        return '$day/$month/$year';
+      }
+      return dateStr;
+    } catch (e) {
+      return dateStr;
+    }
   }
 
   Widget _buildInfoItem({

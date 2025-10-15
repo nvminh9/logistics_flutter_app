@@ -1,6 +1,6 @@
 import 'package:nalogistics_app/data/models/auth/login_request.dart';
 import 'package:nalogistics_app/data/models/auth/login_response.dart';
-import 'package:nalogistics_app/data/models/auth/user_detail_model.dart';
+import 'package:nalogistics_app/data/models/auth/user_detail_response_model.dart';
 
 abstract class IAuthRepository {
   Future<LoginResponse> login(LoginRequest request);

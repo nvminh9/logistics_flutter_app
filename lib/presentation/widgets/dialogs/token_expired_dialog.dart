@@ -1,11 +1,9 @@
-// lib/presentation/widgets/dialogs/token_expired_dialog.dart
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
-import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
 import 'package:nalogistics_app/presentation/routes/route_names.dart';
 import 'package:provider/provider.dart';
+import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
 
 class TokenExpiredDialog extends StatelessWidget {
   final String? message;
@@ -117,7 +115,7 @@ class TokenExpiredDialog extends StatelessWidget {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed:  () => Navigator.of(context).pop(true),
+              onPressed: () => _handleLoginRedirect(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.maritimeBlue,
                 shape: RoundedRectangleBorder(
@@ -145,6 +143,35 @@ class TokenExpiredDialog extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// ⭐ NEW: Handle login redirect
+  Future<void> _handleLoginRedirect(BuildContext context) async {
+    try {
+      // Close dialog first
+      Navigator.of(context).pop();
+
+      // Clear auth state
+      final authController = Provider.of<AuthController>(
+        context,
+        listen: false,
+      );
+      await authController.logout();
+
+      // Navigate to login page
+      if (context.mounted) {
+        context.go(RouteNames.login);
+      }
+
+      print('✅ Redirected to login page');
+    } catch (e) {
+      print('❌ Error during login redirect: $e');
+
+      // Force redirect even if logout fails
+      if (context.mounted) {
+        context.go(RouteNames.login);
+      }
+    }
   }
 }
 

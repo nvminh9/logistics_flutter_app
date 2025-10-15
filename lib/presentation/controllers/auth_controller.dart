@@ -1,3 +1,5 @@
+// lib/presentation/controllers/auth_controller.dart
+
 import 'package:flutter/material.dart';
 import 'package:nalogistics_app/core/base/base_controller.dart';
 import 'package:nalogistics_app/domain/usecases/auth/login_usecase.dart';
@@ -15,6 +17,7 @@ class AuthController extends BaseController {
   LoginResponse? _loginResponse;
   String? _token;
   String? _roleName;
+  String? _username; // ⭐ NEW: Store username
   UserRole _userRole = UserRole.unknown;
   bool _isAuthenticated = false;
 
@@ -22,6 +25,7 @@ class AuthController extends BaseController {
   LoginResponse? get loginResponse => _loginResponse;
   String? get token => _token;
   String? get roleName => _roleName;
+  String? get username => _username; // ⭐ NEW
   UserRole get userRole => _userRole;
   bool get isAuthenticated => _isAuthenticated;
 
@@ -29,10 +33,6 @@ class AuthController extends BaseController {
   bool get isDriver => _userRole.isDriver;
   bool get isOperator => _userRole.isOperator;
   bool get hasFullAccess => _userRole.hasFullAccess;
-
-  // User ID storage
-  String? _userId;
-  String? get userId => _userId;
 
   AuthController() {
     _authRepository = AuthRepository();
@@ -46,11 +46,13 @@ class AuthController extends BaseController {
       if (_isAuthenticated) {
         _token = await _authRepository.getToken();
         _roleName = await _authRepository.getRoleName();
+        _username = await _authRepository.getUsername(); // ⭐ NEW
 
         // Parse role từ roleName
         if (_roleName != null) {
           _userRole = UserRoleExtension.fromString(_roleName);
-          print('✅ User role loaded: ${_userRole.displayName} (${_userRole.apiName})');
+          print('✅ User role loaded: ${_userRole.displayName}');
+          print('   Username: $_username'); // ⭐ NEW
         }
       }
       notifyListeners();
@@ -75,27 +77,19 @@ class AuthController extends BaseController {
       _loginResponse = response;
       _token = response.data?.token;
       _roleName = response.data?.roleName;
+      _username = username; // ⭐ NEW: Save username
 
-      // ⭐ Parse role từ roleName
+      // Parse role từ roleName
       if (_roleName != null) {
         _userRole = UserRoleExtension.fromString(_roleName);
         print('🔐 Login successful!');
+        print('   - Username: $username'); // ⭐ NEW
         print('   - Role: ${_userRole.displayName}');
         print('   - API Name: ${_userRole.apiName}');
-        print('   - Role ID: ${_userRole.id}');
-        print('   - Permissions:');
-        print('     • Can view orders: ${_userRole.canViewOrders}');
-        print('     • Can update status: ${_userRole.canUpdateOrderStatus}');
-        print('     • Can manage drivers: ${_userRole.canManageDrivers}');
-        print('     • Can view reports: ${_userRole.canViewReports}');
       } else {
         _userRole = UserRole.unknown;
         print('⚠️ Warning: No role name in response');
       }
-
-      // ⭐ NEW: Try to extract user ID if available in response
-      // TODO: Update this when backend provides userId in login response
-      // For now, we'll need to call getUserDetail separately
 
       _isAuthenticated = true;
 
@@ -121,12 +115,6 @@ class AuthController extends BaseController {
     }
   }
 
-  // ⭐ NEW: Method to set user ID (call this after getting user detail)
-  void setUserId(String? id) {
-    _userId = id;
-    notifyListeners();
-  }
-
   Future<void> logout() async {
     try {
       setLoading(true);
@@ -137,9 +125,9 @@ class AuthController extends BaseController {
       _loginResponse = null;
       _token = null;
       _roleName = null;
+      _username = null; // ⭐ NEW
       _userRole = UserRole.unknown;
       _isAuthenticated = false;
-      _userId = null; // Clear userId
 
       clearError();
       setLoading(false);
@@ -152,6 +140,7 @@ class AuthController extends BaseController {
       _loginResponse = null;
       _token = null;
       _roleName = null;
+      _username = null; // ⭐ NEW
       _userRole = UserRole.unknown;
       _isAuthenticated = false;
       setLoading(false);
@@ -164,17 +153,14 @@ class AuthController extends BaseController {
       _isAuthenticated = await _authRepository.isLoggedIn();
 
       if (_isAuthenticated) {
-        // Reload role info
+        // Reload info
         _token = await _authRepository.getToken();
         _roleName = await _authRepository.getRoleName();
+        _username = await _authRepository.getUsername(); // ⭐ NEW
 
         if (_roleName != null) {
           _userRole = UserRoleExtension.fromString(_roleName);
         }
-
-        // ⭐ NEW: Try to restore userId from storage if needed
-        // final driverData = await _storage.getObject(AppConstants.keyDriverData);
-        // _userId = driverData?['userId'];
       }
 
       notifyListeners();
@@ -185,7 +171,7 @@ class AuthController extends BaseController {
     }
   }
 
-  // ⭐ Permission checking methods
+  // Permission checking methods
   bool canAccessFeature(String feature) {
     return PermissionHelper.canAccessFeature(_userRole, feature);
   }

@@ -3,10 +3,6 @@ import 'package:nalogistics_app/core/base/base_model.dart';
 class DetailDriverModel extends BaseModel {
   final int driverID;
   final String driverName;
-  final int roleID;
-  final String role;
-  final int userID;
-  final String user;
   final String address;
   final String phone;
   final String licenseNo;
@@ -17,10 +13,6 @@ class DetailDriverModel extends BaseModel {
   DetailDriverModel({
     required this.driverID,
     required this.driverName,
-    required this.roleID,
-    required this.role,
-    required this.userID,
-    required this.user,
     required this.address,
     required this.phone,
     required this.licenseNo,
@@ -33,17 +25,43 @@ class DetailDriverModel extends BaseModel {
     return DetailDriverModel(
       driverID: json['driverID'] ?? 0,
       driverName: json['driverName'] ?? '',
-      roleID: json['roleID'] ?? 0,
-      role: json['role'] ?? '',
-      userID: json['userID'] ?? 0,
-      user: json['user'] ?? '',
       address: json['address'] ?? '',
       phone: json['phone'] ?? '',
       licenseNo: json['licenseNo'] ?? '',
-      expireDate: DateTime.tryParse(json['expireDate'] ?? '') ?? DateTime.now(),
+      expireDate: _parseExpireDate(json['expireDate']),
       isActive: json['isActive'] ?? false,
       status: json['status'] ?? 0,
     );
+  }
+
+  static DateTime _parseExpireDate(dynamic dateStr) {
+    if (dateStr == null) return DateTime.now();
+
+    try {
+      // Handle format: "2026-12-1 00:00:00"
+      final cleaned = dateStr.toString().trim();
+
+      // Try parsing with DateTime.parse first
+      try {
+        return DateTime.parse(cleaned);
+      } catch (_) {
+        // If fails, try manual parsing
+        final parts = cleaned.split(' ');
+        if (parts.isEmpty) return DateTime.now();
+
+        final dateParts = parts[0].split('-');
+        if (dateParts.length < 3) return DateTime.now();
+
+        final year = int.tryParse(dateParts[0]) ?? DateTime.now().year;
+        final month = int.tryParse(dateParts[1]) ?? 1;
+        final day = int.tryParse(dateParts[2]) ?? 1;
+
+        return DateTime(year, month, day);
+      }
+    } catch (e) {
+      print('⚠️ Error parsing expire date: $e');
+      return DateTime.now();
+    }
   }
 
   @override
@@ -51,10 +69,6 @@ class DetailDriverModel extends BaseModel {
     return {
       'driverID': driverID,
       'driverName': driverName,
-      'roleID': roleID,
-      'role': role,
-      'userID': userID,
-      'user': user,
       'address': address,
       'phone': phone,
       'licenseNo': licenseNo,

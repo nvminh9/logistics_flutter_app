@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nalogistics_app/core/constants/app_constants.dart';
-import 'package:nalogistics_app/data/services/local/storage_service.dart';
 import 'package:provider/provider.dart';
 import 'package:nalogistics_app/core/constants/strings.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
@@ -61,44 +59,16 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     super.dispose();
   }
 
+  /// ⭐ UPDATED: Load user info using username from storage
   Future<void> _loadUserInfo() async {
     try {
-      // Get auth controller
-      final authController = Provider.of<AuthController>(
-        context,
-        listen: false,
-      );
-      // Get profile controller
       final profileController = Provider.of<ProfileController>(
         context,
         listen: false,
       );
 
-      // ⭐ Get userId - Priority:
-      // 1. From AuthController if available
-      // 2. From storage
-      // 3. Hardcoded fallback for testing
-      String? userId = authController.userId;
-
-      if (userId == null || userId.isEmpty) {
-        // Try to get from storage
-        final storage = StorageService();
-        final driverData = await storage.getObject(AppConstants.keyDriverData);
-        userId = driverData?['userId']?.toString();
-      }
-
-      // Fallback for testing
-      userId ??= '21';
-
-      print('📱 Loading profile for user ID: $userId');
-
-      // Load user detail
-      await profileController.loadUserDetail(userId);
-
-      // ⭐ Save userId to AuthController for future use
-      if (profileController.hasUserDetail && profileController.userId != null) {
-        authController.setUserId(profileController.userId);
-      }
+      // Load current user detail (will get username from storage)
+      await profileController.loadCurrentUserDetail();
 
       // Start animations after data loaded
       if (mounted) {
@@ -287,6 +257,19 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                 ),
               ),
             ),
+            ElevatedButton.icon(
+              onPressed: _logout,
+              icon: const Icon(Icons.login_rounded),
+              label: const Text(AppStrings.logout),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.maritimeBlue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -341,8 +324,8 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
   Widget _buildProfileHeader(ProfileController controller) {
     return Consumer<AuthController>(
       builder: (context, authController, child) {
-        final displayName = controller.userName ?? 'Người dùng';
-        final displayId = controller.userId ?? 'N/A';
+        final displayName = controller.userName;
+        final displayId = controller.userId;
 
         return Container(
           padding: const EdgeInsets.all(24),
@@ -352,7 +335,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
           ),
           child: Column(
             children: [
-              // ⭐ Use AvatarWidget
+              // Avatar
               AvatarWidget(
                 name: displayName,
                 radius: 40,
@@ -439,35 +422,9 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                         color: Color(role.colorValue),
                       ),
                     ),
-                    // const SizedBox(height: 2),
-                    // Text(
-                    //   controller.role ?? role.apiName,
-                    //   style: const TextStyle(
-                    //     fontSize: 13,
-                    //     color: AppColors.hintText,
-                    //   ),
-                    // ),
                   ],
                 ),
               ),
-              // Container(
-              //   padding: const EdgeInsets.symmetric(
-              //     horizontal: 12,
-              //     vertical: 6,
-              //   ),
-              //   decoration: BoxDecoration(
-              //     color: Color(role.colorValue),
-              //     borderRadius: BorderRadius.circular(20),
-              //   ),
-              //   child: Text(
-              //     'ID: ${role.id}',
-              //     style: const TextStyle(
-              //       fontSize: 11,
-              //       fontWeight: FontWeight.w600,
-              //       color: Colors.white,
-              //     ),
-              //   ),
-              // ),
             ],
           ),
         );
@@ -491,31 +448,21 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                   color: AppColors.statusDelivered,
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.local_shipping_rounded,
-                  title: 'Tổng đơn hàng',
-                  value: controller.completedOrders.toString(),
-                  color: AppColors.statusInTransit,
-                ),
-              ),
+              // const SizedBox(width: 10),
+              // Expanded(
+              //   child: _buildStatCard(
+              //     icon: Icons.local_shipping_rounded,
+              //     title: 'Tổng đơn hàng',
+              //     value: controller.completedOrders.toString(),
+              //     color: AppColors.statusInTransit,
+              //   ),
+              // ),
             ],
           );
         } else {
           // Operator stats
           return Row(
             children: [
-              // Expanded(
-              //   child: _buildStatCard(
-              //     icon: Icons.assignment_rounded,
-              //     title: 'Quản lý',
-              //     value: 'Toàn quyền',
-              //     color: AppColors.oceanTeal,
-              //     isText: true,
-              //   ),
-              // ),
-              // const SizedBox(width: 10),
               Expanded(
                 child: _buildStatCard(
                   icon: Icons.check_circle_rounded,
@@ -632,35 +579,35 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
       _buildInfoItem(
         icon: Icons.badge_rounded,
         label: 'Mã tài xế',
-        value: controller.driverId ?? 'N/A',
+        value: controller.driverId,
         color: AppColors.maritimeBlue,
       ),
       const SizedBox(height: 16),
       _buildInfoItem(
         icon: Icons.person_rounded,
         label: 'Họ tên',
-        value: controller.driverName ?? controller.userName ?? 'N/A',
+        value: controller.driverName,
         color: AppColors.maritimeBlue,
       ),
       const SizedBox(height: 16),
       _buildInfoItem(
         icon: Icons.phone_rounded,
         label: 'Số điện thoại',
-        value: controller.driverPhone ?? 'Chưa cập nhật',
+        value: controller.driverPhone,
         color: AppColors.oceanTeal,
       ),
       const SizedBox(height: 16),
       _buildInfoItem(
         icon: Icons.location_on_rounded,
         label: 'Địa chỉ',
-        value: controller.driverAddress ?? 'Chưa cập nhật',
+        value: controller.driverAddress,
         color: AppColors.statusInTransit,
       ),
       const SizedBox(height: 16),
       _buildInfoItem(
         icon: Icons.credit_card_rounded,
         label: 'Số GPLX',
-        value: controller.licenseNo ?? 'N/A',
+        value: controller.licenseNo,
         color: AppColors.containerOrange,
       ),
       const SizedBox(height: 16),
@@ -739,21 +686,21 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
       _buildInfoItem(
         icon: Icons.badge_rounded,
         label: 'Mã người dùng',
-        value: controller.userId ?? 'N/A',
+        value: controller.userId,
         color: AppColors.oceanTeal,
       ),
       const SizedBox(height: 16),
       _buildInfoItem(
         icon: Icons.person_rounded,
         label: 'Họ tên',
-        value: controller.userName ?? 'N/A',
+        value: controller.userName,
         color: AppColors.oceanTeal,
       ),
       const SizedBox(height: 16),
       _buildInfoItem(
         icon: Icons.account_circle_rounded,
         label: 'Tên đăng nhập',
-        value: controller.userNameLogin ?? 'N/A',
+        value: controller.userNameLogin,
         color: AppColors.maritimeBlue,
       ),
       const SizedBox(height: 16),

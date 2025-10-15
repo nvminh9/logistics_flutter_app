@@ -22,9 +22,9 @@ class AuthRepository implements IAuthRepository {
 
       final loginResponse = LoginResponse.fromJson(response);
 
-      // Lưu token nếu đăng nhập thành công
+      // Lưu token và username nếu đăng nhập thành công
       if (loginResponse.isSuccess && loginResponse.data != null) {
-        await _saveAuthData(loginResponse.data!);
+        await _saveAuthData(loginResponse.data!, request.username);
       }
 
       return loginResponse;
@@ -37,15 +37,10 @@ class AuthRepository implements IAuthRepository {
   @override
   Future<void> logout() async {
     try {
-      // Clear local storage
       await _storage.remove(AppConstants.keyAccessToken);
       await _storage.remove(AppConstants.keyDriverData);
-
-      // Có thể gọi API logout nếu cần
-      // await _apiClient.post('/api/logout', requiresAuth: true);
     } catch (e) {
       print('❌ Logout Error: $e');
-      // Không throw error cho logout để đảm bảo user luôn logout được
     }
   }
 
@@ -78,44 +73,60 @@ class AuthRepository implements IAuthRepository {
     }
   }
 
-  Future<void> _saveAuthData(LoginData data) async {
+  /// ⭐ UPDATED: Get username from storage
+  Future<String?> getUsername() async {
     try {
-      // Lưu token
-      await _storage.saveString(AppConstants.keyAccessToken, data.token);
-
-      // Lưu thông tin driver
-      final driverData = {
-        'token': data.token,
-        'roleName': data.roleName,
-        'loginTime': DateTime.now().toIso8601String(),
-      };
-      await _storage.saveObject(AppConstants.keyDriverData, driverData);
-
-      print('✅ Auth data saved successfully');
+      final driverData = await _storage.getObject(AppConstants.keyDriverData);
+      return driverData?['username'];
     } catch (e) {
-      print('❌ Error saving auth data: $e');
-      rethrow;
+      return null;
     }
   }
 
   @override
-  Future<UserDetailModel> getUserDetail({
-    required String userID,
-  }) async {
+  Future<UserDetailResponse> getUserDetail({required String username}) async {
     try {
       final queryParams = {
-        'id': userID,
+        'username': username,
       };
 
+      print('📤 Fetching user detail for username: $username');
+
       final response = await _apiClient.get(
-        ApiConstants.detailUser,
+        ApiConstants.userDetail,
         queryParams: queryParams,
         requiresAuth: true,
       );
 
-      return UserDetailModel.fromJson(response);
+      print('📥 User detail response: ${response['statusCode']}');
+
+      return UserDetailResponse.fromJson(response);
     } catch (e) {
-      print('❌ Order Detail Repository Error: $e');
+      print('❌ Get User Detail Error: $e');
+      rethrow;
+    }
+  }
+
+  /// ⭐ UPDATED: Save auth data with username
+  Future<void> _saveAuthData(LoginData data, String username) async {
+    try {
+      // Lưu token
+      await _storage.saveString(AppConstants.keyAccessToken, data.token);
+
+      // Lưu thông tin user bao gồm username
+      final userData = {
+        'token': data.token,
+        'roleName': data.roleName,
+        'username': username, // ⭐ Lưu username
+        'loginTime': DateTime.now().toIso8601String(),
+      };
+      await _storage.saveObject(AppConstants.keyDriverData, userData);
+
+      print('✅ Auth data saved successfully');
+      print('   - Username: $username');
+      print('   - Role: ${data.roleName}');
+    } catch (e) {
+      print('❌ Error saving auth data: $e');
       rethrow;
     }
   }

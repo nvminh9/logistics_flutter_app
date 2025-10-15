@@ -1,8 +1,7 @@
-// lib/core/services/session_manager.dart
-
 import 'package:flutter/material.dart';
 import 'package:nalogistics_app/data/services/local/storage_service.dart';
 import 'package:nalogistics_app/core/constants/app_constants.dart';
+import 'package:nalogistics_app/presentation/widgets/dialogs/token_expired_dialog.dart';
 
 class SessionManager {
   static final SessionManager _instance = SessionManager._internal();
@@ -75,112 +74,14 @@ class SessionManager {
     }
   }
 
-  // Hiển thị dialog token hết hạn
+  /// ⭐ UPDATED: Use new token expired dialog
   Future<void> _showTokenExpiredDialog(
       BuildContext context, {
         String? message,
       }) async {
-    return showDialog(
-      context: context,
-      barrierDismissible: false, // Không cho dismiss
-      builder: (context) => WillPopScope(
-        onWillPop: () async => false, // Không cho back
-        child: AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.lock_clock,
-                color: Colors.orange,
-                size: 28,
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Phiên đăng nhập hết hạn',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                message ??
-                    'Phiên đăng nhập của bạn đã hết hạn. '
-                        'Vui lòng đăng nhập lại để tiếp tục sử dụng ứng dụng.',
-                style: const TextStyle(
-                  fontSize: 15,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.orange.withOpacity(0.3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 18,
-                      color: Colors.orange[700],
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Dữ liệu của bạn đã được bảo mật',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.orange[700],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  await _navigateToLogin();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[700],
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  'Đăng nhập lại',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return showTokenExpiredDialog(
+      context,
+      message: message,
     );
   }
 
@@ -205,14 +106,6 @@ class SessionManager {
       if (token == null || token.isEmpty) {
         return false;
       }
-
-      // TODO: Thêm logic check expiration time nếu có lưu
-      // final loginData = await _storage.getObject(AppConstants.keyDriverData);
-      // if (loginData != null) {
-      //   final loginTime = DateTime.parse(loginData['loginTime']);
-      //   final expirationTime = loginTime.add(Duration(hours: 24)); // Example
-      //   return DateTime.now().isBefore(expirationTime);
-      // }
 
       return true;
     } catch (e) {

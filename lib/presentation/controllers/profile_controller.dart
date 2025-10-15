@@ -19,7 +19,6 @@ class ProfileController extends BaseController {
   // USER GETTERS (Always available)
   // ============================================
 
-  // String? get userName => _userDetail?.detailUser.fullName ?? 'Người dùng';
   String get userName {
     final name = _userDetail?.detailUser.fullName;
     if (name == null || name.trim().isEmpty) {
@@ -28,14 +27,12 @@ class ProfileController extends BaseController {
     return name.trim();
   }
 
-  // String? get userId => _userDetail?.detailUser.userID.toString();
   String get userId {
     final id = _userDetail?.detailUser.userID;
     if (id == null) return 'N/A';
     return id.toString();
   }
 
-  // String? get userNameLogin => _userDetail?.detailUser.userName;
   String get userNameLogin {
     final login = _userDetail?.detailUser.userName;
     if (login == null || login.trim().isEmpty) {
@@ -44,13 +41,19 @@ class ProfileController extends BaseController {
     return login.trim();
   }
 
-  // String? get role => _userDetail?.detailUser.role;
   String get role {
-    final roleStr = _userDetail?.detailUser.role;
-    if (roleStr == null || roleStr.trim().isEmpty) {
-      return 'Chưa xác định';
+    final roleId = _userDetail?.detailUser.roleID;
+    if (roleId == null) return 'Chưa xác định';
+
+    // Map roleID to role name
+    switch (roleId) {
+      case 3:
+        return 'Tài xế';
+      case 6:
+        return 'Điều hành';
+      default:
+        return 'Chưa xác định';
     }
-    return roleStr.trim();
   }
 
   int? get roleId => _userDetail?.detailUser.roleID;
@@ -63,18 +66,16 @@ class ProfileController extends BaseController {
 
   bool get hasDriverInfo => _userDetail?.detailDriver != null;
 
-  // String? get driverName => _userDetail?.detailDriver?.driverName;
   String get driverName {
-    if (!hasDriverInfo) return userName; // Fallback to userName
+    if (!hasDriverInfo) return userName;
 
     final name = _userDetail?.detailDriver?.driverName;
     if (name == null || name.trim().isEmpty) {
-      return userName; // Fallback to userName
+      return userName;
     }
     return name.trim();
   }
 
-  // String? get driverId => _userDetail?.detailDriver?.driverID.toString();
   String get driverId {
     if (!hasDriverInfo) return 'N/A';
 
@@ -83,7 +84,6 @@ class ProfileController extends BaseController {
     return id.toString();
   }
 
-  // String? get driverPhone => _userDetail?.detailDriver?.phone;
   String get driverPhone {
     if (!hasDriverInfo) return 'Chưa cập nhật';
 
@@ -94,7 +94,6 @@ class ProfileController extends BaseController {
     return phone.trim();
   }
 
-  // String? get driverAddress => _userDetail?.detailDriver?.address;
   String get driverAddress {
     if (!hasDriverInfo) return 'Chưa cập nhật';
 
@@ -105,7 +104,6 @@ class ProfileController extends BaseController {
     return address.trim();
   }
 
-  // String? get licenseNo => _userDetail?.detailDriver?.licenseNo;
   String get licenseNo {
     if (!hasDriverInfo) return 'N/A';
 
@@ -137,15 +135,15 @@ class ProfileController extends BaseController {
     _getUserDetailUseCase = GetUserDetailUseCase(_authRepository);
   }
 
-  /// Load user detail by user ID
-  Future<void> loadUserDetail(String userId) async {
+  /// ⭐ UPDATED: Load user detail by username
+  Future<void> loadUserDetail(String username) async {
     try {
       setLoading(true);
       clearError();
 
-      print('📦 ProfileController: Loading user detail for ID: $userId');
+      print('📦 ProfileController: Loading user detail for username: $username');
 
-      final detail = await _getUserDetailUseCase.execute(userId: userId);
+      final detail = await _getUserDetailUseCase.execute(username: username);
       _userDetail = detail;
 
       setLoading(false);
@@ -168,13 +166,25 @@ class ProfileController extends BaseController {
     }
   }
 
+  /// ⭐ NEW: Load current user detail from storage
+  Future<void> loadCurrentUserDetail() async {
+    try {
+      final username = await _authRepository.getUsername();
+
+      if (username == null || username.isEmpty) {
+        throw Exception('Không tìm thấy thông tin đăng nhập');
+      }
+
+      await loadUserDetail(username);
+    } catch (e) {
+      print('❌ Load Current User Detail Error: $e');
+      setError(e.toString());
+    }
+  }
+
   /// Reload current user detail
   Future<void> reloadUserDetail() async {
-    if (userId != null) {
-      await loadUserDetail(userId!);
-    } else {
-      print('⚠️ Cannot reload: No user ID available');
-    }
+    await loadCurrentUserDetail();
   }
 
   /// Clear user detail data

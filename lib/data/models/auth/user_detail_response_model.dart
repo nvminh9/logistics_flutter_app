@@ -1,3 +1,5 @@
+// lib/data/models/auth/user_detail_response_model.dart
+
 import 'package:nalogistics_app/core/base/base_model.dart';
 import 'package:nalogistics_app/data/models/auth/detail_driver_model.dart';
 import 'package:nalogistics_app/data/models/auth/detail_user_model.dart';
@@ -35,10 +37,9 @@ class UserDetailResponse extends BaseModel {
   bool get isSuccess => statusCode == 200;
 }
 
-// ⭐ FIXED: Changed from Map to proper models
 class UserDetailModel extends BaseModel {
   final DetailUserModel detailUser;
-  final DetailDriverModel? detailDriver;  // ⭐ Changed from Map
+  final DetailDriverModel? detailDriver;
   final int countOrderCompleted;
 
   UserDetailModel({

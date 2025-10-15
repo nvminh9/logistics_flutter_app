@@ -9,7 +9,7 @@ class ApiConstants {
   static const String login = '$apiVersion/Auth/login';
   static const String logout = '$apiVersion/Auth/logout';
   static const String driverInfo = '$apiVersion/driver/profile';
-  static const String detailUser =  '$apiVersion/Auth/detailUser';
+  static const String userDetail = '$apiVersion/Auth/detailUser';
 
   // ==========================================
   // DRIVER ROLE ENDPOINTS
@@ -201,7 +201,7 @@ class ApiConstants {
   }
 
   /// Build full URL cho User Detail
-  static String getUserDetailUrl(String userId) {
-    return '$detailUser?id=$userId';
+  static String getUserDetailUrl(String username) {
+    return '$userDetail?username=$username';
   }
 }

@@ -7,27 +7,40 @@ class GetUserDetailUseCase {
 
   GetUserDetailUseCase(this._authRepository);
 
-  /// Execute - Lấy thông tin chi tiết user
-  /// Bao gồm: detailUser, detailDriver (nếu có), countOrderCompleted
-  Future<UserDetailModel> execute({required String userId}) async {
+  /// Execute - Lấy thông tin chi tiết user theo username
+  Future<UserDetailModel> execute({required String username}) async {
     try {
-      if (userId.trim().isEmpty) {
-        throw AppException('User ID không được để trống');
+      if (username.trim().isEmpty) {
+        throw AppException('Username không được để trống');
       }
 
-      print('🔍 GetUserDetailUseCase: Fetching user detail for ID: $userId');
+      print('🔍 GetUserDetailUseCase: Fetching detail for username: $username');
 
-      final userDetail = await _authRepository.getUserDetail(userID: userId);
+      final response = await _authRepository.getUserDetail(username: username);
+
+      if (!response.isSuccess) {
+        throw AppException(response.message.isNotEmpty
+            ? response.message
+            : 'Không thể lấy thông tin người dùng');
+      }
+
+      if (response.data == null) {
+        throw AppException('Dữ liệu người dùng không hợp lệ');
+      }
+
+      final userDetail = response.data!;
 
       print('✅ User detail loaded successfully');
       print('   - User ID: ${userDetail.detailUser.userID}');
       print('   - Full Name: ${userDetail.detailUser.fullName}');
-      print('   - Role: ${userDetail.detailUser.role}');
+      print('   - Username: ${userDetail.detailUser.userName}');
+      print('   - Role ID: ${userDetail.detailUser.roleID}');
       print('   - Orders Completed: ${userDetail.countOrderCompleted}');
 
       if (userDetail.detailDriver != null) {
         print('   - Driver Name: ${userDetail.detailDriver!.driverName}');
         print('   - License No: ${userDetail.detailDriver!.licenseNo}');
+        print('   - Phone: ${userDetail.detailDriver!.phone}');
       }
 
       return userDetail;

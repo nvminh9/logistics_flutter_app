@@ -9,6 +9,7 @@ class ApiConstants {
   static const String login = '$apiVersion/Auth/login';
   static const String logout = '$apiVersion/Auth/logout';
   static const String driverInfo = '$apiVersion/driver/profile';
+  static const String detailUser =  '$apiVersion/Auth/detailUser';
 
   // ==========================================
   // DRIVER ROLE ENDPOINTS
@@ -197,5 +198,10 @@ class ApiConstants {
   /// Build URL cho assign rmooc
   static String getAssignRmoocUrl(String orderId, int rmoocId) {
     return '$assignTruck?orderID=$orderId&rmoocID=$rmoocId';
+  }
+
+  /// Build full URL cho User Detail
+  static String getUserDetailUrl(String userId) {
+    return '$detailUser?id=$userId';
   }
 }

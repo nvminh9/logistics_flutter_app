@@ -184,6 +184,8 @@ class AuthController extends BaseController {
     notifyListeners();
   }
 
+
+
   @override
   void dispose() {
     super.dispose();

@@ -1,5 +1,6 @@
 import 'package:nalogistics_app/data/models/auth/login_request.dart';
 import 'package:nalogistics_app/data/models/auth/login_response.dart';
+import 'package:nalogistics_app/data/models/auth/user_detail_model.dart';
 import 'package:nalogistics_app/data/repositories/interfaces/i_auth_repository.dart';
 import 'package:nalogistics_app/data/services/api/api_client.dart';
 import 'package:nalogistics_app/data/services/local/storage_service.dart';
@@ -93,6 +94,28 @@ class AuthRepository implements IAuthRepository {
       print('✅ Auth data saved successfully');
     } catch (e) {
       print('❌ Error saving auth data: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<UserDetailModel> getUserDetail({
+    required String userID,
+  }) async {
+    try {
+      final queryParams = {
+        'id': userID,
+      };
+
+      final response = await _apiClient.get(
+        ApiConstants.detailUser,
+        queryParams: queryParams,
+        requiresAuth: true,
+      );
+
+      return UserDetailModel.fromJson(response);
+    } catch (e) {
+      print('❌ Order Detail Repository Error: $e');
       rethrow;
     }
   }

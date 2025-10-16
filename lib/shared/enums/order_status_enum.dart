@@ -41,7 +41,8 @@ extension OrderStatusExtension on OrderStatus {
       case OrderStatus.pending:
         return 'Chờ xử lý';
       case OrderStatus.inProgress:
-        return 'Chờ lấy hàng';
+        // return 'Chờ lấy hàng';
+        return 'Đang xử lý';
       case OrderStatus.pickedUp:
         return 'Đã lấy hàng';
       case OrderStatus.inTransit:

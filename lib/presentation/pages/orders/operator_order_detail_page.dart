@@ -1110,7 +1110,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () => _showDriverSelectionDialog(context),
+                    onPressed: () => _showTruckSelectionDialog(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.containerOrange,
                       padding: const EdgeInsets.symmetric(vertical: 14),

@@ -213,7 +213,7 @@ class OrderController extends BaseController {
     try {
       List<OrderApiModel> orders;
       final pageSize = _userRole.isOperator ? 30 : 13;
-      // final pageSize = 3; // Test pagination
+      // final pageSize = 6; // Test pagination
 
       if (_userRole.isOperator) {
         orders = await _getOperatorOrdersUseCase.execute(

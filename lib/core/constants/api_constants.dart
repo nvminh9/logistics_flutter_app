@@ -65,18 +65,18 @@ class ApiConstants {
   // DEFAULT QUERY PARAMETERS
   // ==========================================
 
-  /// Driver default params
+  /// Driver default params - ⭐ UPDATED
   static const Map<String, String> defaultDriverOrderParams = {
-    'order': 'desc',
-    'sortBy': 'id',
+    'order': 'desc',           // ⭐ Changed: desc (newest first)
+    'sortBy': 'orderDate',     // ⭐ Changed: orderDate
     'pageSize': '13',
     'pageNumber': '1',
   };
 
-  /// Operator default params
+  /// Operator default params - ⭐ UPDATED
   static const Map<String, String> defaultOperatorOrderParams = {
-    'order': 'asc',
-    'sortBy': 'id',
+    'order': 'desc',           // ⭐ Changed: desc (newest first)
+    'sortBy': 'orderDate',     // ⭐ Changed: orderDate
     'pageSize': '30',
     'pageNumber': '1',
   };

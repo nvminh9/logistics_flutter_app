@@ -1,3 +1,5 @@
+// lib/data/repositories/interfaces/i_order_repository.dart
+
 import 'dart:io';
 import 'package:nalogistics_app/data/models/driver/driver_list_model.dart';
 import 'package:nalogistics_app/data/models/order/assign_driver_response_model.dart';
@@ -18,10 +20,10 @@ abstract class IOrderRepository {
   // DRIVER ROLE METHODS
   // ========================================
 
-  // ⭐ UPDATED: Add search parameters
+  /// ⭐ UPDATED: Default order='desc', sortBy='orderDate'
   Future<OrderListResponse> getOrdersForDriver({
-    String order = 'desc',
-    String sortBy = 'id',
+    String order = 'desc',        // ⭐ Changed default
+    String sortBy = 'orderDate',  // ⭐ Changed default
     int pageSize = 13,
     int pageNumber = 1,
     String? searchKey,
@@ -41,10 +43,10 @@ abstract class IOrderRepository {
   // OPERATOR ROLE METHODS
   // ========================================
 
-  // ⭐ UPDATED: Add search parameters
+  /// ⭐ UPDATED: Default order='desc', sortBy='orderDate'
   Future<OperatorOrderListResponse> getOrdersForOperator({
-    String order = 'asc',
-    String sortBy = 'id',
+    String order = 'desc',        // ⭐ Changed default
+    String sortBy = 'orderDate',  // ⭐ Changed default
     int pageSize = 30,
     int pageNumber = 1,
     String? fromDate,
@@ -69,7 +71,7 @@ abstract class IOrderRepository {
   // ========================================
   // DRIVER MANAGEMENT METHODS
   // ========================================
-  /// Get list of available drivers
+
   Future<DriverListResponse> getDriverList({
     String order = 'asc',
     String sortBy = 'id',
@@ -78,7 +80,6 @@ abstract class IOrderRepository {
     String? keySearch,
   });
 
-  /// Assign driver to order
   Future<AssignDriverResponse> assignDriverToOrder({
     required String orderID,
     required int driverID,
@@ -87,7 +88,7 @@ abstract class IOrderRepository {
   // ========================================
   // TRUCK MANAGEMENT METHODS
   // ========================================
-  /// Get list of available trucks
+
   Future<TruckListResponse> getTruckList({
     String order = 'asc',
     String sortBy = 'id',
@@ -96,7 +97,6 @@ abstract class IOrderRepository {
     String? keySearch,
   });
 
-  /// Assign truck to order
   Future<AssignTruckResponse> assignTruckToOrder({
     required String orderID,
     required int truckID,
@@ -105,7 +105,7 @@ abstract class IOrderRepository {
   // ========================================
   // RMOOC MANAGEMENT METHODS
   // ========================================
-  /// Get list of available rmooc
+
   Future<RmoocListResponse> getRmoocList({
     String order = 'asc',
     String sortBy = 'id',
@@ -114,7 +114,6 @@ abstract class IOrderRepository {
     String? keySearch,
   });
 
-  /// Assign rmooc to order
   Future<AssignRmoocResponse> assignRmoocToOrder({
     required String orderID,
     required int rmoocID,
@@ -124,17 +123,15 @@ abstract class IOrderRepository {
   // IMAGE UPLOAD METHODS
   // ========================================
 
-  /// ⭐ NEW: Upload single image
   Future<UploadImageResponse> uploadSingleImage({
     required String orderID,
     required File imageFile,
     required String description,
   });
 
-  /// ⭐ UPDATED: Upload multiple images (uploads one by one)
   Future<List<UploadImageResponse>> uploadMultipleImages({
     required String orderID,
-    required List<Map<String, dynamic>> images, // {file: File, description: String}
-    Function(int current, int total)? onProgress, // Progress callback
+    required List<Map<String, dynamic>> images,
+    Function(int current, int total)? onProgress,
   });
 }

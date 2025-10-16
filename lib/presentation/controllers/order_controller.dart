@@ -12,7 +12,7 @@ class OrderController extends BaseController {
   late final GetOperatorOrdersUseCase _getOperatorOrdersUseCase;
   late final OrderRepository _orderRepository;
 
-  // ⭐ NEW: Search state
+  // ⭐ Search state
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
@@ -23,19 +23,25 @@ class OrderController extends BaseController {
   UserRole _userRole = UserRole.driver;
   UserRole get userRole => _userRole;
 
+  // ⭐ Date filter state
+  DateTime? _fromDate;
+  DateTime? _toDate;
+
+  DateTime? get fromDate => _fromDate;
+  DateTime? get toDate => _toDate;
+  bool get hasDateFilter => _fromDate != null || _toDate != null;
+
   // ⭐ STATUS TABS - Dynamic based on role
   List<OrderStatus> get activeStatuses {
     if (_userRole.isOperator) {
-      // OPERATOR: 5 tabs including Pending
       return const [
-        OrderStatus.pending,      // ⭐ NEW for Operator
+        OrderStatus.pending,
         OrderStatus.inProgress,
         OrderStatus.pickedUp,
         OrderStatus.inTransit,
         OrderStatus.delivered,
       ];
     } else {
-      // DRIVER: 4 tabs (no Pending)
       return const [
         OrderStatus.inProgress,
         OrderStatus.pickedUp,
@@ -45,42 +51,16 @@ class OrderController extends BaseController {
     }
   }
 
-  // ⭐ NEW: Date filter state
-  DateTime? _fromDate;
-  DateTime? _toDate;
-
-  DateTime? get fromDate => _fromDate;
-  DateTime? get toDate => _toDate;
-  bool get hasDateFilter => _fromDate != null || _toDate != null;
-
-  // ⭐ NEW: Set date filter
-  void setDateFilter(DateTime? fromDate, DateTime? toDate) {
-    _fromDate = fromDate;
-    _toDate = toDate;
-    notifyListeners();
-  }
-
-  // ⭐ NEW: Clear date filter
-  void clearDateFilter() {
-    _fromDate = null;
-    _toDate = null;
-    notifyListeners();
-  }
-
-  // ⭐ NEW: Format date for API (ISO 8601)
-  String? _formatDateForApi(DateTime? date) {
-    if (date == null) return null;
-    return date.toIso8601String();
-  }
-
   // Order data by status
   Map<OrderStatus, List<OrderApiModel>> _ordersByStatus = {};
   Map<OrderStatus, bool> _loadingByStatus = {};
   Map<OrderStatus, String?> _errorByStatus = {};
 
-  // Pagination tracking
+  // ⭐ NEW: Pagination state
   Map<OrderStatus, int> _currentPageByStatus = {};
-  Map<OrderStatus, bool> _hasMoreByStatus = {};
+  Map<OrderStatus, int> _totalPagesByStatus = {};
+  Map<OrderStatus, int> _totalItemsByStatus = {};
+  Map<OrderStatus, bool> _isPaginationLoadingByStatus = {};
 
   // Flag để check đã load initial data chưa
   bool _initialDataLoaded = false;
@@ -91,6 +71,12 @@ class OrderController extends BaseController {
   Map<OrderStatus, String?> get errorByStatus => _errorByStatus;
   bool get initialDataLoaded => _initialDataLoaded;
 
+  // ⭐ NEW: Pagination getters
+  Map<OrderStatus, int> get currentPageByStatus => _currentPageByStatus;
+  Map<OrderStatus, int> get totalPagesByStatus => _totalPagesByStatus;
+  Map<OrderStatus, int> get totalItemsByStatus => _totalItemsByStatus;
+  Map<OrderStatus, bool> get isPaginationLoadingByStatus => _isPaginationLoadingByStatus;
+
   OrderController() {
     _orderRepository = OrderRepository();
     _getOrdersUseCase = GetOrdersUseCase(_orderRepository);
@@ -98,8 +84,30 @@ class OrderController extends BaseController {
     _initializeData();
   }
 
-  // SEARCH ORDER
-  // ⭐ NEW: Set search query
+  // ⭐ Set user role
+  void setUserRole(UserRole role) {
+    if (_userRole != role) {
+      _userRole = role;
+      print('📋 OrderController: Role changed to ${role.displayName}');
+      _initialDataLoaded = false;
+      _initializeData();
+      notifyListeners();
+    }
+  }
+
+  void _initializeData() {
+    for (var status in activeStatuses) {
+      _ordersByStatus[status] = [];
+      _loadingByStatus[status] = false;
+      _errorByStatus[status] = null;
+      _currentPageByStatus[status] = 1;
+      _totalPagesByStatus[status] = 1;
+      _totalItemsByStatus[status] = 0;
+      _isPaginationLoadingByStatus[status] = false;
+    }
+  }
+
+  // ⭐ Set search query
   void setSearchQuery(String query) {
     if (_searchQuery != query) {
       _searchQuery = query;
@@ -107,14 +115,34 @@ class OrderController extends BaseController {
     }
   }
 
-  // ⭐ NEW: Clear search
+  // ⭐ Clear search
   void clearSearch() {
     _searchQuery = '';
     _isSearching = false;
     notifyListeners();
   }
 
-  // ⭐ UPDATED: Load initial data with date filter
+  // ⭐ Set date filter
+  void setDateFilter(DateTime? fromDate, DateTime? toDate) {
+    _fromDate = fromDate;
+    _toDate = toDate;
+    notifyListeners();
+  }
+
+  // ⭐ Clear date filter
+  void clearDateFilter() {
+    _fromDate = null;
+    _toDate = null;
+    notifyListeners();
+  }
+
+  // ⭐ Format date for API
+  String? _formatDateForApi(DateTime? date) {
+    if (date == null) return null;
+    return date.toIso8601String();
+  }
+
+  // ⭐ UPDATED: Load initial data
   Future<void> loadInitialData({
     String? searchKey,
     DateTime? fromDate,
@@ -128,7 +156,6 @@ class OrderController extends BaseController {
       setLoading(true);
       _isSearching = searchKey != null && searchKey.isNotEmpty;
 
-      // Update date filter state
       if (fromDate != null || toDate != null) {
         _fromDate = fromDate;
         _toDate = toDate;
@@ -136,84 +163,180 @@ class OrderController extends BaseController {
 
       for (var status in activeStatuses) {
         _loadingByStatus[status] = true;
+        _currentPageByStatus[status] = 1; // Reset to page 1
       }
       notifyListeners();
 
       print('🔄 Loading initial data for role: ${_userRole.displayName}...');
-      if (_isSearching) {
-        print('   🔍 Searching for: $searchKey');
-      }
+      if (_isSearching) print('   🔍 Searching for: $searchKey');
       if (hasDateFilter) {
         print('   📅 Date filter: ${_formatDateForApi(_fromDate)} to ${_formatDateForApi(_toDate)}');
       }
-      print('   → Loading ${activeStatuses.length} tabs');
 
-      List<OrderApiModel> allOrders;
-
-      if (_userRole.isOperator) {
-        allOrders = await _getOperatorOrdersUseCase.execute(
-          filterStatus: null,
+      // ⭐ Load page 1 for all tabs
+      for (var status in activeStatuses) {
+        await _loadPageForStatus(
+          status: status,
           pageNumber: 1,
-          pageSize: 100,
-          order: 'asc',
-          sortBy: 'id',
           searchKey: searchKey,
           fromDate: _formatDateForApi(_fromDate),
           toDate: _formatDateForApi(_toDate),
         );
-        print('✅ [OPERATOR] Received ${allOrders.length} orders from API');
-      } else {
-        allOrders = await _getOrdersUseCase.execute(
-          filterStatus: null,
-          pageNumber: 1,
-          pageSize: 100,
-          order: 'desc',
-          sortBy: 'id',
-          searchKey: searchKey,
-        );
-        print('✅ [DRIVER] Received ${allOrders.length} orders from API');
-      }
-
-      for (var status in activeStatuses) {
-        _ordersByStatus[status] = allOrders
-            .where((order) => order.status == status.value)
-            .toList();
-
-        print('   ${status.shortName}: ${_ordersByStatus[status]!.length} orders');
-      }
-
-      if (allOrders.length < 100) {
-        for (var status in activeStatuses) {
-          _hasMoreByStatus[status] = false;
-        }
       }
 
       _initialDataLoaded = true;
-
-      for (var status in activeStatuses) {
-        _loadingByStatus[status] = false;
-      }
-
       setLoading(false);
       notifyListeners();
 
-      print('✅ Initial data loaded successfully for ${_userRole.displayName}!');
+      print('✅ Initial data loaded successfully!');
 
     } catch (e) {
       print('❌ Load Initial Data Error: $e');
-
       for (var status in activeStatuses) {
         _loadingByStatus[status] = false;
         _errorByStatus[status] = e.toString();
       }
-
       setLoading(false);
       setError(e.toString());
       notifyListeners();
     }
   }
 
-  // ⭐ UPDATED: Refresh orders with date filter
+  // ⭐ NEW: Load specific page for status
+  Future<void> _loadPageForStatus({
+    required OrderStatus status,
+    required int pageNumber,
+    String? searchKey,
+    String? fromDate,
+    String? toDate,
+  }) async {
+    try {
+      List<OrderApiModel> orders;
+      final pageSize = _userRole.isOperator ? 30 : 13;
+      // final pageSize = 3; // Test pagination
+
+      if (_userRole.isOperator) {
+        orders = await _getOperatorOrdersUseCase.execute(
+          filterStatus: status,
+          pageNumber: pageNumber,
+          pageSize: pageSize,
+          order: 'desc',        // ⭐ UPDATED: desc (newest first)
+          sortBy: 'orderDate',  // ⭐ UPDATED: orderDate
+          searchKey: searchKey,
+          fromDate: fromDate,
+          toDate: toDate,
+        );
+      } else {
+        orders = await _getOrdersUseCase.execute(
+          filterStatus: status,
+          pageNumber: pageNumber,
+          pageSize: pageSize,
+          order: 'desc',        // ⭐ UPDATED: desc (newest first)
+          sortBy: 'orderDate',  // ⭐ UPDATED: orderDate
+          searchKey: searchKey,
+        );
+      }
+
+      _ordersByStatus[status] = orders;
+      _currentPageByStatus[status] = pageNumber;
+
+      // ⭐ Calculate total pages (giả sử API không trả về total count)
+      // Nếu số orders < pageSize thì đây là trang cuối
+      if (orders.length < pageSize) {
+        _totalPagesByStatus[status] = pageNumber;
+      } else {
+        // Nếu có đủ pageSize items, có thể có trang tiếp theo
+        _totalPagesByStatus[status] = pageNumber + 1;
+      }
+
+      _totalItemsByStatus[status] = orders.length;
+      _loadingByStatus[status] = false;
+
+      print('   ✅ ${status.shortName}: Loaded page $pageNumber with ${orders.length} orders');
+
+    } catch (e) {
+      print('   ❌ ${status.shortName}: Error loading page $pageNumber: $e');
+      _errorByStatus[status] = e.toString();
+      _loadingByStatus[status] = false;
+      throw e;
+    }
+  }
+
+  // ⭐ NEW: Go to specific page
+  Future<void> goToPage(OrderStatus status, int pageNumber) async {
+    if (!activeStatuses.contains(status)) return;
+    if (pageNumber < 1) return;
+    if (pageNumber == _currentPageByStatus[status]) return;
+
+    try {
+      _isPaginationLoadingByStatus[status] = true;
+      notifyListeners();
+
+      print('📄 Loading page $pageNumber for ${status.shortName}...');
+
+      await _loadPageForStatus(
+        status: status,
+        pageNumber: pageNumber,
+        searchKey: _isSearching ? _searchQuery : null,
+        fromDate: _formatDateForApi(_fromDate),
+        toDate: _formatDateForApi(_toDate),
+      );
+
+      _isPaginationLoadingByStatus[status] = false;
+      notifyListeners();
+
+    } catch (e) {
+      print('❌ Go To Page Error: $e');
+      _isPaginationLoadingByStatus[status] = false;
+      _errorByStatus[status] = e.toString();
+      notifyListeners();
+    }
+  }
+
+  // ⭐ NEW: Next page
+  Future<void> nextPage(OrderStatus status) async {
+    final currentPage = _currentPageByStatus[status] ?? 1;
+    final totalPages = _totalPagesByStatus[status] ?? 1;
+
+    if (currentPage < totalPages) {
+      await goToPage(status, currentPage + 1);
+    }
+  }
+
+  // ⭐ NEW: Previous page
+  Future<void> previousPage(OrderStatus status) async {
+    final currentPage = _currentPageByStatus[status] ?? 1;
+
+    if (currentPage > 1) {
+      await goToPage(status, currentPage - 1);
+    }
+  }
+
+  // ⭐ NEW: First page
+  Future<void> firstPage(OrderStatus status) async {
+    await goToPage(status, 1);
+  }
+
+  // ⭐ NEW: Last page
+  Future<void> lastPage(OrderStatus status) async {
+    final totalPages = _totalPagesByStatus[status] ?? 1;
+    await goToPage(status, totalPages);
+  }
+
+  // ⭐ NEW: Check if has next page
+  bool hasNextPage(OrderStatus status) {
+    final currentPage = _currentPageByStatus[status] ?? 1;
+    final totalPages = _totalPagesByStatus[status] ?? 1;
+    return currentPage < totalPages;
+  }
+
+  // ⭐ NEW: Check if has previous page
+  bool hasPreviousPage(OrderStatus status) {
+    final currentPage = _currentPageByStatus[status] ?? 1;
+    return currentPage > 1;
+  }
+
+  // ⭐ UPDATED: Refresh orders
   Future<void> refreshOrders(
       OrderStatus status, {
         String? searchKey,
@@ -229,40 +352,15 @@ class OrderController extends BaseController {
       notifyListeners();
 
       print('🔄 Refreshing ${status.shortName}...');
-      if (_isSearching) {
-        print('   🔍 Searching for: $searchKey');
-      }
-      if (fromDate != null || toDate != null) {
-        print('   📅 Date filter: ${_formatDateForApi(fromDate)} to ${_formatDateForApi(toDate)}');
-      }
 
-      List<OrderApiModel> orders;
+      await _loadPageForStatus(
+        status: status,
+        pageNumber: 1, // Reset to page 1 on refresh
+        searchKey: searchKey,
+        fromDate: _formatDateForApi(fromDate ?? _fromDate),
+        toDate: _formatDateForApi(toDate ?? _toDate),
+      );
 
-      if (_userRole.isOperator) {
-        orders = await _getOperatorOrdersUseCase.execute(
-          filterStatus: status,
-          pageNumber: 1,
-          pageSize: 30,
-          searchKey: searchKey,
-          fromDate: _formatDateForApi(fromDate ?? _fromDate),
-          toDate: _formatDateForApi(toDate ?? _toDate),
-        );
-      } else {
-        orders = await _getOrdersUseCase.execute(
-          filterStatus: status,
-          pageNumber: 1,
-          pageSize: 13,
-          searchKey: searchKey,
-        );
-      }
-
-      _ordersByStatus[status] = orders;
-      _currentPageByStatus[status] = 1;
-
-      final pageSize = _userRole.isOperator ? 30 : 13;
-      _hasMoreByStatus[status] = orders.length >= pageSize;
-
-      _loadingByStatus[status] = false;
       notifyListeners();
 
     } catch (e) {
@@ -273,7 +371,7 @@ class OrderController extends BaseController {
     }
   }
 
-  // ⭐ NEW: Search orders
+  // ⭐ Search orders
   Future<void> searchOrders(String searchKey) async {
     if (searchKey.trim().isEmpty) {
       clearSearch();
@@ -285,215 +383,7 @@ class OrderController extends BaseController {
     await loadInitialData(searchKey: searchKey);
   }
 
-  /// ⭐ Set user role (gọi từ bên ngoài khi login)
-  void setUserRole(UserRole role) {
-    if (_userRole != role) {
-      _userRole = role;
-      print('📋 OrderController: Role changed to ${role.displayName}');
-      print('   → Tabs count: ${activeStatuses.length}');
-      print('   → Statuses: ${activeStatuses.map((s) => s.shortName).join(", ")}');
-
-      // Reset data khi đổi role
-      _initialDataLoaded = false;
-      _initializeData();
-      notifyListeners();
-    }
-  }
-
-  void _initializeData() {
-    // ⭐ Khởi tạo cho tất cả statuses theo role
-    for (var status in activeStatuses) {
-      _ordersByStatus[status] = [];
-      _loadingByStatus[status] = false;
-      _errorByStatus[status] = null;
-      _currentPageByStatus[status] = 1;
-      _hasMoreByStatus[status] = true;
-    }
-  }
-
-  /// ⭐ LOAD TẤT CẢ TABS NGAY TỪ ĐẦU (Role-aware)
-  // Future<void> loadInitialData() async {
-  //   if (_initialDataLoaded) return;
-  //
-  //   try {
-  //     setLoading(true);
-  //
-  //     // Set loading cho tất cả statuses
-  //     for (var status in activeStatuses) {
-  //       _loadingByStatus[status] = true;
-  //     }
-  //     notifyListeners();
-  //
-  //     print('🔄 Loading initial data for role: ${_userRole.displayName}...');
-  //     print('   → Loading ${activeStatuses.length} tabs');
-  //
-  //     List<OrderApiModel> allOrders;
-  //
-  //     // ⭐ Gọi API tương ứng theo role
-  //     if (_userRole.isOperator) {
-  //       // OPERATOR: Gọi API Operator
-  //       allOrders = await _getOperatorOrdersUseCase.execute(
-  //         filterStatus: null,
-  //         pageNumber: 1,
-  //         pageSize: 100,
-  //         order: 'asc',
-  //         sortBy: 'id',
-  //       );
-  //       print('✅ [OPERATOR] Received ${allOrders.length} orders from API');
-  //     } else {
-  //       // DRIVER: Gọi API Driver (existing)
-  //       allOrders = await _getOrdersUseCase.execute(
-  //         filterStatus: null,
-  //         pageNumber: 1,
-  //         pageSize: 100,
-  //         order: 'desc',
-  //         sortBy: 'id',
-  //       );
-  //       print('✅ [DRIVER] Received ${allOrders.length} orders from API');
-  //     }
-  //
-  //     // ⭐ PHÂN LOẠI ORDERS CHO CÁC TABS
-  //     for (var status in activeStatuses) {
-  //       _ordersByStatus[status] = allOrders
-  //           .where((order) => order.status == status.value)
-  //           .toList();
-  //
-  //       print('   ${status.shortName}: ${_ordersByStatus[status]!.length} orders');
-  //     }
-  //
-  //     // Check xem còn data không
-  //     if (allOrders.length < 100) {
-  //       for (var status in activeStatuses) {
-  //         _hasMoreByStatus[status] = false;
-  //       }
-  //     }
-  //
-  //     _initialDataLoaded = true;
-  //
-  //     // Clear loading
-  //     for (var status in activeStatuses) {
-  //       _loadingByStatus[status] = false;
-  //     }
-  //
-  //     setLoading(false);
-  //     notifyListeners();
-  //
-  //     print('✅ Initial data loaded successfully for ${_userRole.displayName}!');
-  //
-  //   } catch (e) {
-  //     print('❌ Load Initial Data Error: $e');
-  //
-  //     for (var status in activeStatuses) {
-  //       _loadingByStatus[status] = false;
-  //       _errorByStatus[status] = e.toString();
-  //     }
-  //
-  //     setLoading(false);
-  //     setError(e.toString());
-  //     notifyListeners();
-  //   }
-  // }
-
-  /// Load more orders for specific status (pagination)
-  Future<void> loadMoreOrders(OrderStatus status) async {
-    if (!activeStatuses.contains(status)) return;
-    if (_loadingByStatus[status] == true) return;
-    if (_hasMoreByStatus[status] == false) return;
-
-    try {
-      _loadingByStatus[status] = true;
-      notifyListeners();
-
-      print('📄 Loading more for ${status.shortName}...');
-
-      List<OrderApiModel> newOrders;
-
-      // ⭐ Gọi API tương ứng theo role
-      if (_userRole.isOperator) {
-        newOrders = await _getOperatorOrdersUseCase.execute(
-          filterStatus: status,
-          pageNumber: _currentPageByStatus[status]! + 1,
-          pageSize: 30,
-        );
-      } else {
-        newOrders = await _getOrdersUseCase.execute(
-          filterStatus: status,
-          pageNumber: _currentPageByStatus[status]! + 1,
-          pageSize: 13,
-        );
-      }
-
-      _ordersByStatus[status]!.addAll(newOrders);
-      _currentPageByStatus[status] = _currentPageByStatus[status]! + 1;
-
-      // Check if has more
-      final pageSize = _userRole.isOperator ? 30 : 13;
-      if (newOrders.length < pageSize) {
-        _hasMoreByStatus[status] = false;
-      }
-
-      _loadingByStatus[status] = false;
-      notifyListeners();
-
-    } catch (e) {
-      print('❌ Load More Error: $e');
-      _loadingByStatus[status] = false;
-      _errorByStatus[status] = e.toString();
-      notifyListeners();
-    }
-  }
-
-  /// Refresh orders for specific status
-  // Future<void> refreshOrders(OrderStatus status) async {
-  //   if (!activeStatuses.contains(status)) return;
-  //
-  //   try {
-  //     _loadingByStatus[status] = true;
-  //     _errorByStatus[status] = null;
-  //     notifyListeners();
-  //
-  //     print('🔄 Refreshing ${status.shortName}...');
-  //
-  //     List<OrderApiModel> orders;
-  //
-  //     // ⭐ Gọi API tương ứng theo role
-  //     if (_userRole.isOperator) {
-  //       orders = await _getOperatorOrdersUseCase.execute(
-  //         filterStatus: status,
-  //         pageNumber: 1,
-  //         pageSize: 30,
-  //       );
-  //     } else {
-  //       orders = await _getOrdersUseCase.execute(
-  //         filterStatus: status,
-  //         pageNumber: 1,
-  //         pageSize: 13,
-  //       );
-  //     }
-  //
-  //     _ordersByStatus[status] = orders;
-  //     _currentPageByStatus[status] = 1;
-  //
-  //     final pageSize = _userRole.isOperator ? 30 : 13;
-  //     _hasMoreByStatus[status] = orders.length >= pageSize;
-  //
-  //     _loadingByStatus[status] = false;
-  //     notifyListeners();
-  //
-  //   } catch (e) {
-  //     print('❌ Refresh Error: $e');
-  //     _loadingByStatus[status] = false;
-  //     _errorByStatus[status] = e.toString();
-  //     notifyListeners();
-  //   }
-  // }
-
-  // /// Refresh tất cả tabs
-  // Future<void> refreshAllTabs() async {
-  //   _initialDataLoaded = false;
-  //   await loadInitialData();
-  // }
-  // ⭐ UPDATED: Refresh all tabs with current filters
+  // ⭐ Refresh all tabs
   Future<void> refreshAllTabs() async {
     _initialDataLoaded = false;
     await loadInitialData(
@@ -503,7 +393,7 @@ class OrderController extends BaseController {
     );
   }
 
-  // ⭐ NEW: Apply date filter
+  // ⭐ Apply date filter
   Future<void> applyDateFilter(DateTime? fromDate, DateTime? toDate) async {
     setDateFilter(fromDate, toDate);
     _initialDataLoaded = false;
@@ -527,9 +417,6 @@ class OrderController extends BaseController {
   List<OrderApiModel> getOrders(OrderStatus status) =>
       _ordersByStatus[status] ?? [];
 
-  bool hasMore(OrderStatus status) =>
-      _hasMoreByStatus[status] ?? false;
-
   int getTotalOrdersCount() {
     return activeStatuses.fold(
       0,
@@ -544,6 +431,21 @@ class OrderController extends BaseController {
   void clearErrorForStatus(OrderStatus status) {
     _errorByStatus[status] = null;
     notifyListeners();
+  }
+
+  // ⭐ NEW: Get current page
+  int getCurrentPage(OrderStatus status) {
+    return _currentPageByStatus[status] ?? 1;
+  }
+
+  // ⭐ NEW: Get total pages
+  int getTotalPages(OrderStatus status) {
+    return _totalPagesByStatus[status] ?? 1;
+  }
+
+  // ⭐ NEW: Check if pagination is loading
+  bool isPaginationLoading(OrderStatus status) {
+    return _isPaginationLoadingByStatus[status] ?? false;
   }
 
   @override

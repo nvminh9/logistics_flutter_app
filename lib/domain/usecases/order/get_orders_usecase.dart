@@ -7,13 +7,15 @@ class GetOrdersUseCase {
 
   GetOrdersUseCase(this._orderRepository);
 
+  /// Execute - Get orders for Driver
+  /// ⭐ UPDATED: Default order='desc', sortBy='orderDate'
   Future<List<OrderApiModel>> execute({
-    OrderStatus? filterStatus, // null = lấy tất cả
-    String order = 'desc',
-    String sortBy = 'id',
+    OrderStatus? filterStatus,
+    String order = 'desc',        // ⭐ Changed default
+    String sortBy = 'orderDate',  // ⭐ Changed default
     int pageSize = 13,
     int pageNumber = 1,
-    String? searchKey,        // ⭐ NEW
+    String? searchKey,
   }) async {
     try {
       final response = await _orderRepository.getOrdersForDriver(

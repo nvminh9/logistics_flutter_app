@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nalogistics_app/core/utils/date_formatter.dart';
 import 'package:nalogistics_app/presentation/widgets/dialogs/date_filter_dialog.dart';
+import 'package:nalogistics_app/presentation/widgets/common/pagination_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
 import 'package:nalogistics_app/presentation/controllers/order_controller.dart';
@@ -24,7 +25,6 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
   late OrderController _orderController;
   late AuthController _authController;
 
-  // ⭐ NEW: Search controller
   final TextEditingController _searchController = TextEditingController();
   bool _isSearchBarVisible = false;
 
@@ -47,7 +47,7 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
   @override
   void dispose() {
     _tabController.dispose();
-    _searchController.dispose();  // ⭐ NEW
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -56,12 +56,10 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
     await _orderController.loadInitialData();
   }
 
-  // ⭐ NEW: Handle search
   void _handleSearch(String query) {
     _orderController.searchOrders(query);
   }
 
-  // ⭐ NEW: Clear search
   void _clearSearch() {
     _searchController.clear();
     _orderController.clearSearch();
@@ -71,7 +69,6 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
     });
   }
 
-  // ⭐ NEW: Toggle search bar
   void _toggleSearchBar() {
     setState(() {
       _isSearchBarVisible = !_isSearchBarVisible;
@@ -81,7 +78,6 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
     });
   }
 
-  // ⭐ NEW: Show date filter dialog
   Future<void> _showDateFilterDialog() async {
     final result = await showDialog<Map<String, DateTime?>>(
       context: context,
@@ -94,12 +90,10 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
     if (result != null) {
       final fromDate = result['fromDate'];
       final toDate = result['toDate'];
-
       await _orderController.applyDateFilter(fromDate, toDate);
     }
   }
 
-  // ⭐ NEW: Clear all filters
   void _clearAllFilters() {
     _searchController.clear();
     _orderController.clearSearch();
@@ -121,42 +115,41 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
           backgroundColor: AppColors.primaryBackground,
           appBar: AppBar(
             title: _isSearchBarVisible
-                ? _buildSearchField()  // ⭐ NEW
+                ? _buildSearchField()
                 : Row(
-                    children: [
-                      const Text(
-                        'Danh sách đơn hàng',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Color(userRole.colorValue).withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          userRole.displayName,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ],
+              children: [
+                const Text(
+                  'Danh sách đơn hàng',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Color(userRole.colorValue).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    userRole.displayName,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
             ),
             backgroundColor: AppColors.maritimeBlue,
             elevation: 0,
             actions: [
-              // ⭐ NEW: Date filter button (chỉ cho Operator)
               if (userRole.isOperator) ...[
                 Consumer<OrderController>(
                   builder: (context, controller, child) {
@@ -185,15 +178,11 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                   },
                 ),
               ],
-
-              // Search button
               IconButton(
                 icon: Icon(_isSearchBarVisible ? Icons.close : Icons.search),
                 onPressed: _toggleSearchBar,
                 tooltip: _isSearchBarVisible ? 'Đóng tìm kiếm' : 'Tìm kiếm',
               ),
-
-              // Refresh button
               Consumer<OrderController>(
                 builder: (context, controller, child) {
                   return IconButton(
@@ -290,7 +279,6 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
           ),
           body: Column(
             children: [
-              // ⭐ UPDATED: Filter indicators
               Consumer<OrderController>(
                 builder: (context, controller, child) {
                   final hasFilters = controller.isSearching || controller.hasDateFilter;
@@ -346,7 +334,6 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            // Search filter chip
                             if (controller.isSearching)
                               _buildFilterChip(
                                 icon: Icons.search,
@@ -357,16 +344,15 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                                   controller.refreshAllTabs();
                                 },
                               ),
-
-                            // Date filter chip
-                            if (controller.hasDateFilter) _buildFilterChip(
-                              icon: Icons.calendar_month,
-                              label: _getDateFilterLabel(controller),
-                              onRemove: () {
-                                controller.clearDateFilter();
-                                controller.refreshAllTabs();
-                              },
-                            ),
+                            if (controller.hasDateFilter)
+                              _buildFilterChip(
+                                icon: Icons.calendar_month,
+                                label: _getDateFilterLabel(controller),
+                                onRemove: () {
+                                  controller.clearDateFilter();
+                                  controller.refreshAllTabs();
+                                },
+                              ),
                           ],
                         ),
                       ],
@@ -374,8 +360,6 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                   );
                 },
               ),
-
-              // Tab views
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
@@ -386,18 +370,42 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
               ),
             ],
           ),
-          // body: TabBarView(
-          //   controller: _tabController,
-          //   children: activeStatuses.map((status) {
-          //     return _buildOrderList(status, userRole);
-          //   }).toList(),
-          // ),
         );
       },
     );
   }
 
-  // ⭐ NEW: Build filter chip
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchController,
+      autofocus: true,
+      style: const TextStyle(color: Colors.black),
+      decoration: InputDecoration(
+        hintText: 'Tìm theo mã đơn hàng...',
+        hintStyle: TextStyle(color: Colors.black.withOpacity(0.7)),
+        border: InputBorder.none,
+        suffixIcon: _searchController.text.isNotEmpty
+            ? IconButton(
+          icon: const Icon(Icons.clear, color: AppColors.maritimeDarkBlue),
+          onPressed: () {
+            _searchController.clear();
+            _orderController.refreshAllTabs();
+            _handleSearch('');
+          },
+        )
+            : null,
+      ),
+      onChanged: (value) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (value == _searchController.text) {
+            _handleSearch(value);
+          }
+        });
+      },
+      onSubmitted: _handleSearch,
+    );
+  }
+
   Widget _buildFilterChip({
     required IconData icon,
     required String label,
@@ -451,58 +459,22 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
     );
   }
 
-  // ⭐ NEW: Build search field
-  Widget _buildSearchField() {
-    return TextField(
-      controller: _searchController,
-      autofocus: true,
-      style: const TextStyle(color: Colors.black),
-      decoration: InputDecoration(
-        hintText: 'Tìm theo mã đơn hàng...',
-        hintStyle: TextStyle(color: Colors.black.withOpacity(0.7)),
-        border: InputBorder.none,
-        suffixIcon: _searchController.text.isNotEmpty
-            ? IconButton(
-          icon: const Icon(Icons.clear, color: Colors.black),
-          onPressed: () {
-            _searchController.clear();
-            _handleSearch('');
-          },
-        )
-            : null,
-      ),
-      onChanged: (value) {
-        // Debounce search
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (value == _searchController.text) {
-            _handleSearch(value);
-          }
-        });
-      },
-      onSubmitted: _handleSearch,
-    );
-  }
-
-  // ⭐ NEW: Get date filter label
   String _getDateFilterLabel(OrderController controller) {
     final fromDate = controller.fromDate;
     final toDate = controller.toDate;
 
     if (fromDate != null && toDate != null) {
-      // Check if same day
       if (fromDate.year == toDate.year &&
           fromDate.month == toDate.month &&
           fromDate.day == toDate.day) {
         return 'Ngày: ${DateFormatter.formatDate(fromDate)}';
       }
-
       return '${DateFormatter.formatDate(fromDate)} - ${DateFormatter.formatDate(toDate)}';
     } else if (fromDate != null) {
       return 'Từ: ${DateFormatter.formatDate(fromDate)}';
     } else if (toDate != null) {
       return 'Đến: ${DateFormatter.formatDate(toDate)}';
     }
-
     return 'Lọc theo ngày';
   }
 
@@ -513,6 +485,11 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
         final isLoading = orderController.isLoadingForStatus(status);
         final hasError = orderController.hasErrorForStatus(status);
         final error = orderController.getError(status);
+
+        // ⭐ Pagination state
+        final currentPage = orderController.getCurrentPage(status);
+        final totalPages = orderController.getTotalPages(status);
+        final isPaginationLoading = orderController.isPaginationLoading(status);
 
         if (isLoading && orders.isEmpty) {
           return Center(
@@ -528,15 +505,6 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                   style: const TextStyle(
                     color: AppColors.secondaryText,
                     fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  userRole.isOperator ? '(Operator Mode)' : '(Driver Mode)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Color(userRole.colorValue),
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -630,49 +598,52 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
           );
         }
 
-        return RefreshIndicator(
-          onRefresh: () => orderController.refreshOrders(status),
-          color: AppColors.maritimeBlue,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: orders.length + (orderController.hasMore(status) ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index >= orders.length) {
-                if (!isLoading) {
-                  orderController.loadMoreOrders(status);
-                }
-                return const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.maritimeBlue,
-                    ),
-                  ),
-                );
-              }
+        // ⭐ Column with ListView + Pagination
+        return Column(
+          children: [
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () => orderController.refreshOrders(status),
+                color: AppColors.maritimeBlue,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: orders.length,
+                  itemBuilder: (context, index) {
+                    final order = orders[index];
 
-              final order = orders[index];
+                    if (userRole.isOperator) {
+                      return OperatorOrderCard(
+                        order: order,
+                        onTap: () {
+                          context.push('/operator-order-detail/${order.orderID}');
+                        },
+                      );
+                    } else {
+                      return OrderStatusCard(
+                        order: order,
+                        onTap: () {
+                          context.push('/order-detail/${order.orderID}');
+                        },
+                      );
+                    }
+                  },
+                ),
+              ),
+            ),
 
-              // ⭐ KEY CHANGE: Route khác nhau theo role
-              if (userRole.isOperator) {
-                return OperatorOrderCard(
-                  order: order,
-                  onTap: () {
-                    // ⭐ Operator dùng route riêng
-                    context.push('/operator-order-detail/${order.orderID}');
-                  },
-                );
-              } else {
-                return OrderStatusCard(
-                  order: order,
-                  onTap: () {
-                    // ⭐ Driver dùng route cũ
-                    context.push('/order-detail/${order.orderID}');
-                  },
-                );
-              }
-            },
-          ),
+            // ⭐ Pagination bar
+            CompactPaginationBar(
+              currentPage: currentPage,
+              totalPages: totalPages,
+              isLoading: isPaginationLoading,
+              onPreviousPage: orderController.hasPreviousPage(status)
+                  ? () => orderController.previousPage(status)
+                  : null,
+              onNextPage: orderController.hasNextPage(status)
+                  ? () => orderController.nextPage(status)
+                  : null,
+            ),
+          ],
         );
       },
     );

@@ -24,44 +24,17 @@ class OrderRepository implements IOrderRepository {
 
   // ========================================
   // DRIVER ROLE METHODS
-  // ========================================
+  // =======================================
 
-  // @override
-  // Future<OrderListResponse> getOrdersForDriver({
-  //   String order = 'desc',
-  //   String sortBy = 'id',
-  //   int pageSize = 13,
-  //   int pageNumber = 1,
-  // }) async {
-  //   try {
-  //     final queryParams = {
-  //       'order': order,
-  //       'sortBy': sortBy,
-  //       'pageSize': pageSize.toString(),
-  //       'pageNumber': pageNumber.toString(),
-  //     };
-  //
-  //     final response = await _apiClient.get(
-  //       ApiConstants.driverOrders,
-  //       queryParams: queryParams,
-  //       requiresAuth: true,
-  //     );
-  //
-  //     return OrderListResponse.fromJson(response);
-  //   } catch (e) {
-  //     print('❌ Driver Order Repository Error: $e');
-  //     rethrow;
-  //   }
-  // }
-
+  /// ⭐ UPDATED: Default parameters
   @override
   Future<OrderListResponse> getOrdersForDriver({
-    String order = 'desc',
-    String sortBy = 'id',
+    String order = 'desc',        // ⭐ Changed
+    String sortBy = 'orderDate',  // ⭐ Changed
     int pageSize = 13,
     int pageNumber = 1,
-    String? searchKey,      // ⭐ NEW
-    int? status,            // ⭐ NEW
+    String? searchKey,
+    int? status,
   }) async {
     try {
       final queryParams = {
@@ -71,7 +44,6 @@ class OrderRepository implements IOrderRepository {
         'pageNumber': pageNumber.toString(),
       };
 
-      // ⭐ Add search parameters
       if (searchKey != null && searchKey.isNotEmpty) {
         queryParams['searchKey'] = searchKey;
       }
@@ -147,49 +119,11 @@ class OrderRepository implements IOrderRepository {
   // OPERATOR ROLE METHODS
   // ========================================
 
-  // @override
-  // Future<OperatorOrderListResponse> getOrdersForOperator({
-  //   String order = 'asc',
-  //   String sortBy = 'id',
-  //   int pageSize = 30,
-  //   int pageNumber = 1,
-  //   String? fromDate,
-  //   String? toDate,
-  // }) async {
-  //   try {
-  //     final queryParams = {
-  //       'order': order,
-  //       'sortBy': sortBy,
-  //       'pageSize': pageSize.toString(),
-  //       'pageNumber': pageNumber.toString(),
-  //     };
-  //
-  //     if (fromDate != null) {
-  //       queryParams['fromDate'] = fromDate;
-  //     }
-  //     if (toDate != null) {
-  //       queryParams['toDate'] = toDate;
-  //     }
-  //
-  //     print('📤 Operator fetching orders: $queryParams');
-  //
-  //     final response = await _apiClient.get(
-  //       ApiConstants.operatorOrders,
-  //       queryParams: queryParams,
-  //       requiresAuth: true,
-  //     );
-  //
-  //     return OperatorOrderListResponse.fromJson(response);
-  //   } catch (e) {
-  //     print('❌ Operator Order Repository Error: $e');
-  //     rethrow;
-  //   }
-  // }
-
+  /// ⭐ UPDATED: Default parameters
   @override
   Future<OperatorOrderListResponse> getOrdersForOperator({
-    String order = 'asc',
-    String sortBy = 'id',
+    String order = 'desc',        // ⭐ Changed
+    String sortBy = 'orderDate',  // ⭐ Changed
     int pageSize = 30,
     int pageNumber = 1,
     String? fromDate,
@@ -205,15 +139,13 @@ class OrderRepository implements IOrderRepository {
         'pageNumber': pageNumber.toString(),
       };
 
-      // ⭐ Add date parameters
       if (fromDate != null && fromDate.isNotEmpty) {
-        queryParams['fromDateStr'] = fromDate;  // ⭐ Changed to fromDateStr
+        queryParams['fromDateStr'] = fromDate;
       }
       if (toDate != null && toDate.isNotEmpty) {
-        queryParams['toDateStr'] = toDate;      // ⭐ Changed to toDateStr
+        queryParams['toDateStr'] = toDate;
       }
 
-      // Add search parameters
       if (searchKey != null && searchKey.isNotEmpty) {
         queryParams['searchKey'] = searchKey;
       }

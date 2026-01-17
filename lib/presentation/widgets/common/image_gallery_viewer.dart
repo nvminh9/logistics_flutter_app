@@ -214,31 +214,31 @@ class _ImageGalleryViewerState extends State<ImageGalleryViewer> {
           ),
 
           // Help text overlay (shows on first load)
-          if (_showUI && widget.images.length > 1)
-            Positioned(
-              top: MediaQuery.of(context).size.height * 0.4,
-              left: 0,
-              right: 0,
-              child: IgnorePointer(
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      'Vuốt ngang để xem ảnh khác\nChụm để zoom',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          // if (_showUI && widget.images.length > 1)
+          //   Positioned(
+          //     top: MediaQuery.of(context).size.height * 0.4,
+          //     left: 0,
+          //     right: 0,
+          //     child: IgnorePointer(
+          //       child: Center(
+          //         child: Container(
+          //           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          //           decoration: BoxDecoration(
+          //             color: Colors.black.withOpacity(0.6),
+          //             borderRadius: BorderRadius.circular(8),
+          //           ),
+          //           child: const Text(
+          //             'Vuốt ngang để xem ảnh khác\nChụm để zoom',
+          //             textAlign: TextAlign.center,
+          //             style: TextStyle(
+          //               color: Colors.white,
+          //               fontSize: 14,
+          //             ),
+          //           ),
+          //         ),
+          //       ),
+          //     ),
+          //   ),
         ],
       ),
     );

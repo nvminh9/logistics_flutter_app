@@ -11,6 +11,7 @@ import 'package:nalogistics_app/presentation/controllers/order_detail_controller
 import 'package:nalogistics_app/presentation/controllers/order_controller.dart';
 import 'package:nalogistics_app/presentation/widgets/common/custom_button.dart';
 import 'package:nalogistics_app/presentation/widgets/common/app_bar_widget.dart';
+import 'package:nalogistics_app/presentation/widgets/common/image_gallery_viewer.dart';
 import 'package:nalogistics_app/shared/enums/order_status_enum.dart';
 
 class OrderDetailPage extends StatefulWidget {
@@ -416,63 +417,20 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
     );
   }
 
-  void _showImageDialog(OrderImageModel image) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.7,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(5),
-                child: CachedNetworkImage(
-                  imageUrl: image.url,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    image.descrip,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    DateFormatter.formatDateTime(image.created),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.secondaryText,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+  void _openImageGallery(List<OrderImageModel> images, int initialIndex) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ImageGalleryViewer(
+          images: images,
+          initialIndex: initialIndex,
         ),
       ),
     );
   }
 
-  Widget _buildImageItem(OrderImageModel image) {
+  Widget _buildImageItem(OrderImageModel image, int index, List<OrderImageModel> allImages) {
     return GestureDetector(
-      onTap: () => _showImageDialog(image),
+      onTap: () => _openImageGallery(allImages, index),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.sectionBackground,
@@ -553,7 +511,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
           itemCount: images.length,
           itemBuilder: (context, index) {
             final image = images[index];
-            return _buildImageItem(image);
+            return _buildImageItem(image, index, images);
           },
         ),
       ],

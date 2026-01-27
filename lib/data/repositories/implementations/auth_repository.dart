@@ -83,14 +83,24 @@ class AuthRepository implements IAuthRepository {
     }
   }
 
+  /// ⭐ NEW: Get userId from storage
+  Future<int?> getUserId() async {
+    try {
+      final driverData = await _storage.getObject(AppConstants.keyDriverData);
+      return driverData?['userId'];
+    } catch (e) {
+      return null;
+    }
+  }
+
   @override
-  Future<UserDetailResponse> getUserDetail({required String username}) async {
+  Future<UserDetailResponse> getUserDetail({required int id}) async {
     try {
       final queryParams = {
-        'username': username,
+        'id': id.toString(),
       };
 
-      print('📤 Fetching user detail for username: $username');
+      print('📤 Fetching user detail for id: $id');
 
       final response = await _apiClient.get(
         ApiConstants.userDetail,
@@ -107,23 +117,25 @@ class AuthRepository implements IAuthRepository {
     }
   }
 
-  /// ⭐ UPDATED: Save auth data with username
+  /// ⭐ UPDATED: Save auth data with username and userId
   Future<void> _saveAuthData(LoginData data, String username) async {
     try {
       // Lưu token
       await _storage.saveString(AppConstants.keyAccessToken, data.token);
 
-      // Lưu thông tin user bao gồm username
+      // Lưu thông tin user bao gồm username và userId
       final userData = {
         'token': data.token,
         'roleName': data.roleName,
-        'username': username, // ⭐ Lưu username
+        'username': username,
+        'userId': data.userId, // ⭐ Lưu userId
         'loginTime': DateTime.now().toIso8601String(),
       };
       await _storage.saveObject(AppConstants.keyDriverData, userData);
 
       print('✅ Auth data saved successfully');
       print('   - Username: $username');
+      print('   - UserId: ${data.userId}');
       print('   - Role: ${data.roleName}');
     } catch (e) {
       print('❌ Error saving auth data: $e');

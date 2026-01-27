@@ -201,8 +201,8 @@ class ApiConstants {
   }
 
   /// Build full URL cho User Detail
-  static String getUserDetailUrl(String username) {
-    return '$userDetail?username=$username';
+  static String getUserDetailUrl(int id) {
+    return '$userDetail?id=$id';
   }
 
   // Build URL with search for Driver

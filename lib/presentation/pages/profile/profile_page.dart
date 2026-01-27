@@ -59,7 +59,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     super.dispose();
   }
 
-  /// ⭐ UPDATED: Load user info using username from storage
+  /// ⭐ UPDATED: Load user info using userId from storage
   Future<void> _loadUserInfo() async {
     try {
       final profileController = Provider.of<ProfileController>(
@@ -67,7 +67,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
         listen: false,
       );
 
-      // Load current user detail (will get username from storage)
+      // Load current user detail (will get userId from storage)
       await profileController.loadCurrentUserDetail();
 
       // Start animations after data loaded

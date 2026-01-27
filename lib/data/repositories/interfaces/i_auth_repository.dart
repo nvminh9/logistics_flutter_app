@@ -8,5 +8,5 @@ abstract class IAuthRepository {
   Future<bool> isLoggedIn();
   Future<String?> getToken();
   Future<String?> getRoleName();
-  Future<UserDetailResponse> getUserDetail({required String username});
+  Future<UserDetailResponse> getUserDetail({required int id});
 }

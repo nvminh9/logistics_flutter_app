@@ -135,15 +135,15 @@ class ProfileController extends BaseController {
     _getUserDetailUseCase = GetUserDetailUseCase(_authRepository);
   }
 
-  /// ⭐ UPDATED: Load user detail by username
-  Future<void> loadUserDetail(String username) async {
+  /// ⭐ UPDATED: Load user detail by id
+  Future<void> loadUserDetail(int userId) async {
     try {
       setLoading(true);
       clearError();
 
-      print('📦 ProfileController: Loading user detail for username: $username');
+      print('📦 ProfileController: Loading user detail for id: $userId');
 
-      final detail = await _getUserDetailUseCase.execute(username: username);
+      final detail = await _getUserDetailUseCase.execute(id: userId);
       _userDetail = detail;
 
       setLoading(false);
@@ -166,16 +166,16 @@ class ProfileController extends BaseController {
     }
   }
 
-  /// ⭐ NEW: Load current user detail from storage
+  /// ⭐ UPDATED: Load current user detail from storage using userId
   Future<void> loadCurrentUserDetail() async {
     try {
-      final username = await _authRepository.getUsername();
+      final userId = await _authRepository.getUserId();
 
-      if (username == null || username.isEmpty) {
+      if (userId == null) {
         throw Exception('Không tìm thấy thông tin đăng nhập');
       }
 
-      await loadUserDetail(username);
+      await loadUserDetail(userId);
     } catch (e) {
       print('❌ Load Current User Detail Error: $e');
       setError(e.toString());

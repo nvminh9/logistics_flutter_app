@@ -34,16 +34,19 @@ class LoginResponse extends BaseModel {
 class LoginData extends BaseModel {
   final String token;
   final String roleName;
+  final int? userId;
 
   LoginData({
     required this.token,
     required this.roleName,
+    this.userId,
   });
 
   factory LoginData.fromJson(Map<String, dynamic> json) {
     return LoginData(
       token: json['token'] ?? '',
       roleName: json['roleName'] ?? '',
+      userId: json['userId'],
     );
   }
 
@@ -52,6 +55,7 @@ class LoginData extends BaseModel {
     return {
       'token': token,
       'roleName': roleName,
+      'userId': userId,
     };
   }
 }

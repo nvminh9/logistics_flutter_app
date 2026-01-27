@@ -7,16 +7,16 @@ class GetUserDetailUseCase {
 
   GetUserDetailUseCase(this._authRepository);
 
-  /// Execute - Lấy thông tin chi tiết user theo username
-  Future<UserDetailModel> execute({required String username}) async {
+  /// Execute - Lấy thông tin chi tiết user theo id
+  Future<UserDetailModel> execute({required int id}) async {
     try {
-      if (username.trim().isEmpty) {
-        throw AppException('Username không được để trống');
+      if (id <= 0) {
+        throw AppException('User ID không hợp lệ');
       }
 
-      print('🔍 GetUserDetailUseCase: Fetching detail for username: $username');
+      print('🔍 GetUserDetailUseCase: Fetching detail for id: $id');
 
-      final response = await _authRepository.getUserDetail(username: username);
+      final response = await _authRepository.getUserDetail(id: id);
 
       if (!response.isSuccess) {
         throw AppException(response.message.isNotEmpty

@@ -43,6 +43,17 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     final order = _controller.orderDetail;
     if (order == null) return;
 
+    // ⭐ VALIDATE: Kiểm tra đã chọn đủ tài xế, xe và rmooc chưa
+    final missingItems = _controller.validateAssignments();
+    if (missingItems.isNotEmpty) {
+      // Hiển thị dialog thông báo lỗi
+      await showDialog(
+        context: context,
+        builder: (context) => _buildValidationErrorDialog(missingItems),
+      );
+      return;
+    }
+
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
@@ -299,6 +310,123 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           ),
           child: const Text(
             'Xác nhận',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ⭐ DIALOG THÔNG BÁO LỖI VALIDATION
+  Widget _buildValidationErrorDialog(List<String> missingItems) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.statusError.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.warning_amber_rounded,
+              color: AppColors.statusError,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Chưa đủ thông tin',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Vui lòng chọn đầy đủ các thông tin sau trước khi xác nhận đơn hàng:',
+            style: TextStyle(
+              fontSize: 15,
+              height: 1.5,
+              color: AppColors.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.statusError.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.statusError.withOpacity(0.2),
+              ),
+            ),
+            child: Column(
+              children: missingItems.map((item) {
+                IconData icon;
+                switch (item) {
+                  case 'Tài xế':
+                    icon = Icons.person_off_outlined;
+                    break;
+                  case 'Xe':
+                    icon = Icons.local_shipping_outlined;
+                    break;
+                  case 'Rơ-mooc':
+                    icon = Icons.rv_hookup_outlined;
+                    break;
+                  default:
+                    icon = Icons.error_outline;
+                }
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      Icon(
+                        icon,
+                        size: 20,
+                        color: AppColors.statusError,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Chưa chọn $item',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.primaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        ElevatedButton(
+          onPressed: () => Navigator.of(context).pop(),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.maritimeBlue,
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: const Text(
+            'Đã hiểu',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,

@@ -71,6 +71,34 @@ class OperatorOrderDetailController extends BaseController {
     }
   }
 
+  /// ⭐ Kiểm tra đã chọn đủ tài xế, xe và rmooc chưa
+  /// Trả về danh sách các mục còn thiếu
+  List<String> validateAssignments() {
+    final missingItems = <String>[];
+
+    if (_orderDetail == null) return missingItems;
+
+    // Kiểm tra tài xế
+    if (_orderDetail!.driverId == null || _orderDetail!.driverName.isEmpty) {
+      missingItems.add('Tài xế');
+    }
+
+    // Kiểm tra xe
+    if (_orderDetail!.truckId == null || _orderDetail!.truckNo.isEmpty) {
+      missingItems.add('Xe');
+    }
+
+    // Kiểm tra rmooc
+    if (_orderDetail!.rmoocId == null || _orderDetail!.rmoocNo.isEmpty) {
+      missingItems.add('Rơ-mooc');
+    }
+
+    return missingItems;
+  }
+
+  /// Kiểm tra xem đã chọn đủ thông tin chưa
+  bool get isReadyToConfirm => validateAssignments().isEmpty;
+
   /// ⭐ Xác nhận đơn hàng Pending → InProgress
   Future<bool> confirmPendingOrder() async {
     if (_orderDetail == null) {
@@ -80,6 +108,13 @@ class OperatorOrderDetailController extends BaseController {
 
     if (_orderDetail!.orderStatus != OrderStatus.pending) {
       setError('Chỉ có thể xác nhận đơn hàng có trạng thái "Chờ xử lý"');
+      return false;
+    }
+
+    // Kiểm tra đã chọn đủ tài xế, xe, rmooc chưa
+    final missingItems = validateAssignments();
+    if (missingItems.isNotEmpty) {
+      setError('Vui lòng chọn đầy đủ: ${missingItems.join(", ")}');
       return false;
     }
 

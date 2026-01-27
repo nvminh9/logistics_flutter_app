@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'http://10.0.2.2:5167'; // Android Emulator
+  static const String baseUrl = 'http://103.163.119.173:5000';
   // static const String baseUrl = 'http://127.0.0.1:5167'; // iOS Simulator
   static const String apiVersion = '/api';
 

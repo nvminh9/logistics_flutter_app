@@ -710,7 +710,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
                     ),
                     const SizedBox(width: 8),
                     const Text(
-                      'ĐIỂM LẤY HÀNG',
+                      'ĐIỂM LẤY',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -722,6 +722,14 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
                 ),
                 const SizedBox(height: 12),
                 Text(
+                  "Cảng nhận Container",
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
                   order.fromLocationName,
                   style: const TextStyle(
                     fontSize: 16,
@@ -729,12 +737,21 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
                     color: AppColors.primaryText,
                   ),
                 ),
+                const SizedBox(height: 12),
+                Text(
+                  "Kho nhận/giao hàng",
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   order.fromWhereName,
                   style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.secondaryText,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryText,
                   ),
                 ),
               ],
@@ -786,7 +803,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
                     ),
                     const SizedBox(width: 8),
                     const Text(
-                      'ĐIỂM GIAO HÀNG',
+                      'ĐIỂM TRẢ',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -797,6 +814,14 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
                   ],
                 ),
                 const SizedBox(height: 12),
+                Text(
+                  "Cảng hạ/trả Container",
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Text(
                   order.toLocationName,
                   style: const TextStyle(

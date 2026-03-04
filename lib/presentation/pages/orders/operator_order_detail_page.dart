@@ -1438,7 +1438,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
       children: [
         _buildLocationItem(
           icon: Icons.upload,
-          label: 'ĐIỂM LẤY HÀNG',
+          label: 'ĐIỂM LẤY',
           location: order.fromLocationName,
           detail: order.fromWhereName,
           color: AppColors.statusInTransit,
@@ -1454,7 +1454,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
         ),
         _buildLocationItem(
           icon: Icons.download,
-          label: 'ĐIỂM GIAO HÀNG',
+          label: 'ĐIỂM TRẢ',
           location: order.toLocationName,
           color: AppColors.statusDelivered,
         ),
@@ -1748,6 +1748,14 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           ),
           const SizedBox(height: 12),
           Text(
+            label == "ĐIỂM LẤY" ? "Cảng nhận Container" : label == "ĐIỂM TRẢ" ? "Cảng hạ/trả Container" : "Unknow",
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
             location,
             style: const TextStyle(
               fontSize: 16,
@@ -1756,12 +1764,21 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             ),
           ),
           if (detail != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              "Kho nhận/giao hàng",
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.secondaryText,
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
               detail,
               style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.secondaryText,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryText,
               ),
             ),
           ],

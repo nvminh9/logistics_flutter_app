@@ -850,26 +850,18 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
             ],
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _buildVehicleInfo(
-                  icon: Icons.inventory_2_outlined,
-                  label: 'Số Container',
-                  value: order.containerNo,
-                  color: AppColors.skyBlue,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildVehicleInfo(
-                  icon: Icons.local_shipping,
-                  label: 'Biển số xe',
-                  value: order.truckNo,
-                  color: AppColors.maritimeBlue,
-                ),
-              ),
-            ],
+          _buildVehicleInfo(
+            icon: Icons.inventory_2_outlined,
+            label: 'Số Container',
+            value: order.containerNo,
+            color: AppColors.skyBlue,
+          ),
+          const SizedBox(height: 12),
+          _buildVehicleInfo(
+            icon: Icons.local_shipping,
+            label: 'Biển số xe',
+            value: order.truckNo,
+            color: AppColors.maritimeBlue,
           ),
           const SizedBox(height: 12),
           _buildVehicleInfo(

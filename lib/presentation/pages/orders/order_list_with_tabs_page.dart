@@ -116,7 +116,8 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
           appBar: AppBar(
             title: _isSearchBarVisible
                 ? _buildSearchField()
-                : Row(
+                : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'Danh sách đơn hàng',
@@ -125,7 +126,7 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(height: 3),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 6,

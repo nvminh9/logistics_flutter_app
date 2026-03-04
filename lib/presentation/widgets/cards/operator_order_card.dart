@@ -71,37 +71,13 @@ class OperatorOrderCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Text(
-                                'ĐH #${order.orderID}',
-                                style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primaryText,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _getStatusColor(order.orderStatus),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  order.orderStatus.shortName.toUpperCase(),
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          Text(
+                            'ĐH #${order.orderID}',
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryText,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -109,6 +85,26 @@ class OperatorOrderCard extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 13,
                               color: AppColors.secondaryText,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(order.orderStatus),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              order.orderStatus.shortName.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                                letterSpacing: 0.3,
+                              ),
                             ),
                           ),
                         ],

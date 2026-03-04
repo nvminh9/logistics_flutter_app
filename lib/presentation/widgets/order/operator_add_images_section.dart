@@ -494,35 +494,37 @@ class AddImagesSection extends StatelessWidget {
           'Thêm ghi chú cho ảnh',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.file(
-                  imageFile,
-                  height: 200,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descriptionController,
-                maxLines: 3,
-                maxLength: 200,
-                decoration: InputDecoration(
-                  hintText: 'Nhập ghi chú (không bắt buộc)',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+        content: SingleChildScrollView(
+          child: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    imageFile,
+                    height: 150,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
                   ),
-                  filled: true,
-                  fillColor: AppColors.sectionBackground,
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descriptionController,
+                  maxLines: 3,
+                  maxLength: 200,
+                  decoration: InputDecoration(
+                    hintText: 'Nhập ghi chú (không bắt buộc)',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: AppColors.sectionBackground,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -559,10 +561,7 @@ class AddImagesSection extends StatelessWidget {
       context: context,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
-        child: Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
-          ),
+        child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -570,6 +569,8 @@ class AddImagesSection extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 child: Image.file(
                   image.imageFile,
+                  height: 220,
+                  width: double.infinity,
                   fit: BoxFit.contain,
                 ),
               ),

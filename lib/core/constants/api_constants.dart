@@ -1,5 +1,6 @@
 class ApiConstants {
   static const String baseUrl = 'http://103.163.119.173:5000';
+  // static const String baseUrl = 'https://127.0.0.1:5000';
   // static const String baseUrl = 'http://127.0.0.1:5167'; // iOS Simulator
   static const String apiVersion = '/api';
 
@@ -17,6 +18,7 @@ class ApiConstants {
   static const String driverOrders = '$apiVersion/DriverRole/listOrderForDriver';
   static const String driverOrderDetail = '$apiVersion/DriverRole/detailOrderForDriver';
   static const String driverUpdateStatus = '$apiVersion/DriverRole/updateStatusOrderForDriver';
+  static const String driverSeenAt = '$apiVersion/DriverRole/DriverSeenAt';
 
   // ==========================================
   // OPERATOR ROLE ENDPOINTS

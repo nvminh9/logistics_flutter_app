@@ -12,14 +12,39 @@ class DriverListResponse extends BaseModel {
     required this.data,
   });
 
+  // factory DriverListResponse.fromJson(Map<String, dynamic> json) {
+  //   return DriverListResponse(
+  //     statusCode: json['statusCode'] ?? 0,
+  //     message: json['message'] ?? '',
+  //     data: (json['data'] as List<dynamic>?)
+  //         ?.map((item) => DriverItemModel.fromJson(item))
+  //         .toList() ??
+  //         [],
+  //   );
+  // }
+
   factory DriverListResponse.fromJson(Map<String, dynamic> json) {
+    dynamic dataNode = json['data'];
+
+    if (dataNode is Map<String, dynamic>) {
+      dataNode =
+          dataNode['data'] ??
+              dataNode['listDriver'] ??
+              [];
+    }
+
+    final drivers = (dataNode as List<dynamic>? ?? []);
+
     return DriverListResponse(
       statusCode: json['statusCode'] ?? 0,
       message: json['message'] ?? '',
-      data: (json['data'] as List<dynamic>?)
-          ?.map((item) => DriverItemModel.fromJson(item))
-          .toList() ??
-          [],
+      data: drivers
+          .map(
+            (item) => DriverItemModel.fromJson(
+          item as Map<String, dynamic>,
+        ),
+      )
+          .toList(),
     );
   }
 

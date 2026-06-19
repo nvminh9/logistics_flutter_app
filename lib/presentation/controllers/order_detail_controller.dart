@@ -4,19 +4,23 @@ import 'package:flutter/material.dart';
 import 'package:nalogistics_app/core/base/base_controller.dart';
 import 'package:nalogistics_app/data/models/order/order_detail_api_model.dart';
 import 'package:nalogistics_app/data/models/order/pending_image_model.dart';
+import 'package:nalogistics_app/data/repositories/implementations/auth_repository.dart';
 import 'package:nalogistics_app/data/repositories/implementations/order_repository.dart';
 import 'package:nalogistics_app/domain/usecases/order/get_order_detail_usecase.dart';
 import 'package:nalogistics_app/domain/usecases/order/update_order_status_usecase.dart';
+import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
 import 'package:nalogistics_app/shared/enums/order_status_enum.dart';
 
 class OrderDetailController extends BaseController {
   late final GetOrderDetailUseCase _getOrderDetailUseCase;
   late final UpdateOrderStatusUseCase _updateOrderStatusUseCase;
   late final OrderRepository _orderRepository;
+  late final AuthRepository _authRepository;
 
   OrderDetailModel? _orderDetail;
   bool _isUpdatingStatus = false;
   String? _currentOrderID; // Track current order ID
+  bool _driverSeenSent = false;
 
   // Getters
   OrderDetailModel? get orderDetail => _orderDetail;
@@ -26,6 +30,7 @@ class OrderDetailController extends BaseController {
     _orderRepository = OrderRepository();
     _getOrderDetailUseCase = GetOrderDetailUseCase(_orderRepository);
     _updateOrderStatusUseCase = UpdateOrderStatusUseCase(_orderRepository);
+    _authRepository = AuthRepository();
   }
 
   // Load chi tiết đơn hàng
@@ -34,6 +39,7 @@ class OrderDetailController extends BaseController {
       setLoading(true);
       clearError();
       _currentOrderID = orderID; // Save current order ID
+      _driverSeenSent = false;
 
       print('📦 Loading order detail for ID: $orderID');
 
@@ -110,6 +116,33 @@ class OrderDetailController extends BaseController {
   Future<void> reloadOrderDetail() async {
     if (_orderDetail != null) {
       await loadOrderDetail(_orderDetail!.orderID.toString());
+    }
+  }
+
+  // Xem đơn hàng (Driver Role)
+  Future<void> updateDriverSeenAt() async {
+    try {
+      print((await _authRepository.getRoleName()).toString().toUpperCase());
+      print(!((await _authRepository.getRoleName()).toString().toUpperCase() == 'DRIVER'));
+      if (!((await _authRepository.getRoleName()).toString().toUpperCase() == 'DRIVER')) {
+        return;
+      }
+
+      if (_driverSeenSent) {
+        return;
+      }
+
+      if (_currentOrderID == null) {
+        return;
+      }
+
+      _driverSeenSent = true;
+
+      await _orderRepository.updateDriverSeenAt(
+        orderID: _currentOrderID!,
+      );
+    } catch (e) {
+      print('❌ DriverSeenAt update failed: $e');
     }
   }
 

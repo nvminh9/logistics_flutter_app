@@ -50,11 +50,34 @@ class OperatorOrderData extends BaseModel {
     this.toDate,
   });
 
+  // factory OperatorOrderData.fromJson(Map<String, dynamic> json) {
+  //   return OperatorOrderData(
+  //     listOrder: (json['listOrder'] as List<dynamic>?)
+  //         ?.map((item) => OperatorOrderModel.fromJson(item as Map<String, dynamic>))
+  //         .toList() ?? [],
+  //     fromDate: json['fromDate'],
+  //     toDate: json['toDate'],
+  //   );
+  // }
+
   factory OperatorOrderData.fromJson(Map<String, dynamic> json) {
+    final dynamic ordersNode =
+        json['listOrder'] ?? json['data'];
+
+    List<dynamic> orders = [];
+
+    if (ordersNode is List) {
+      orders = ordersNode;
+    }
+
     return OperatorOrderData(
-      listOrder: (json['listOrder'] as List<dynamic>?)
-          ?.map((item) => OperatorOrderModel.fromJson(item as Map<String, dynamic>))
-          .toList() ?? [],
+      listOrder: orders
+          .map(
+            (item) => OperatorOrderModel.fromJson(
+          item as Map<String, dynamic>,
+        ),
+      )
+          .toList(),
       fromDate: json['fromDate'],
       toDate: json['toDate'],
     );

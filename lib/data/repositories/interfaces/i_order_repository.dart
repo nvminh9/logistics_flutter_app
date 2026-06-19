@@ -39,6 +39,10 @@ abstract class IOrderRepository {
     required int statusValue,
   });
 
+  Future<void> updateDriverSeenAt({
+    required String orderID,
+  });
+
   // ========================================
   // OPERATOR ROLE METHODS
   // ========================================

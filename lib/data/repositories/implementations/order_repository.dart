@@ -115,6 +115,31 @@ class OrderRepository implements IOrderRepository {
     }
   }
 
+  // Xem đơn hàng (Driver Role)
+  @override
+  Future<void> updateDriverSeenAt({
+    required String orderID,
+  }) async {
+    try {
+      final queryParams = {
+        'OrderID': orderID,
+      };
+
+      print('👁️ Updating DriverSeenAt: orderID=$orderID');
+
+      await _apiClient.get(
+        ApiConstants.driverSeenAt,
+        queryParams: queryParams,
+        requiresAuth: true,
+      );
+
+      print('✅ DriverSeenAt updated');
+    } catch (e) {
+      print('❌ Update DriverSeenAt Error: $e');
+      rethrow;
+    }
+  }
+
   // ========================================
   // OPERATOR ROLE METHODS
   // ========================================

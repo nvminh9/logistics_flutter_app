@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:nalogistics_app/data/models/order/order_detail_api_model.dart';
 import 'package:nalogistics_app/data/models/order/order_image_model.dart';
+import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
 import 'package:nalogistics_app/presentation/widgets/order/driver_add_images_section.dart';
 import 'package:provider/provider.dart';
 import 'package:nalogistics_app/core/constants/strings.dart';
@@ -13,6 +14,7 @@ import 'package:nalogistics_app/presentation/widgets/common/custom_button.dart';
 import 'package:nalogistics_app/presentation/widgets/common/app_bar_widget.dart';
 import 'package:nalogistics_app/presentation/widgets/common/image_gallery_viewer.dart';
 import 'package:nalogistics_app/shared/enums/order_status_enum.dart';
+import 'dart:async';
 
 class OrderDetailPage extends StatefulWidget {
   final String orderID;
@@ -28,12 +30,14 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  Timer? _driverSeenTimer;
 
   @override
   void initState() {
     super.initState();
     _setupAnimations();
     _loadOrderDetail();
+    _startDriverSeenTimer();
   }
 
   void _setupAnimations() {
@@ -68,6 +72,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
   void dispose() {
     _fadeController.dispose();
     _slideController.dispose();
+    _driverSeenTimer?.cancel();
     super.dispose();
   }
 
@@ -251,6 +256,27 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
         );
       }
     }
+  }
+
+  void _startDriverSeenTimer() {
+    final authController = context.read<AuthController>();
+
+    if (!authController.isDriver) {
+      return;
+    }
+
+    _driverSeenTimer?.cancel();
+
+    _driverSeenTimer = Timer(
+      const Duration(seconds: 5),
+          () {
+        if (!mounted) return;
+
+        context
+            .read<OrderDetailController>()
+            .updateDriverSeenAt();
+      },
+    );
   }
 
   @override

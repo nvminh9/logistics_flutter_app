@@ -52,7 +52,14 @@ class OrderRepository implements IOrderRepository {
         queryParams['status'] = status.toString();
       }
 
-      print('📤 Driver fetching orders: $queryParams');
+      // print('📤 Driver fetching orders: $queryParams');
+
+      print(
+        '📤 Driver fetching orders => '
+            '/api/DriverRole/listOrderForDriver?$queryParams',
+      );
+      print('🔍 searchKey = $searchKey');
+      print('🔍 status = $status');
 
       final response = await _apiClient.get(
         ApiConstants.driverOrders,

@@ -116,9 +116,16 @@ class OrderController extends BaseController {
   }
 
   // ⭐ Clear search
+  // void clearSearch() {
+  //   _searchQuery = '';
+  //   _isSearching = false;
+  //   notifyListeners();
+  // }
+
   void clearSearch() {
     _searchQuery = '';
     _isSearching = false;
+    _initialDataLoaded = false;
     notifyListeners();
   }
 
@@ -372,15 +379,31 @@ class OrderController extends BaseController {
   }
 
   // ⭐ Search orders
-  Future<void> searchOrders(String searchKey) async {
-    if (searchKey.trim().isEmpty) {
-      clearSearch();
-      await loadInitialData();
-      return;
-    }
+  // Future<void> searchOrders(String searchKey) async {
+  //   if (searchKey.trim().isEmpty) {
+  //     clearSearch();
+  //     await loadInitialData();
+  //     return;
+  //   }
+  //
+  //   print("Search Key: ${searchKey}");
+  //   setSearchQuery(searchKey);
+  //   await loadInitialData(searchKey: searchKey);
+  // }
 
-    setSearchQuery(searchKey);
-    await loadInitialData(searchKey: searchKey);
+  Future<void> searchOrders(String searchKey) async {
+    final keyword = searchKey.trim();
+
+    _searchQuery = keyword;
+    _isSearching = keyword.isNotEmpty;
+
+    _initialDataLoaded = false;
+
+    notifyListeners();
+
+    await loadInitialData(
+      searchKey: keyword.isEmpty ? null : keyword,
+    );
   }
 
   // ⭐ Refresh all tabs

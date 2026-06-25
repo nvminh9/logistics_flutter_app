@@ -62,9 +62,10 @@ class TokenExpiredDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              message ??
-                  'Phiên đăng nhập của bạn đã hết hạn. '
-                      'Vui lòng đăng nhập lại để tiếp tục sử dụng ứng dụng.',
+              // message ??
+              //     'Phiên đăng nhập của bạn đã hết hạn. '
+              //         'Vui lòng đăng nhập lại để tiếp tục sử dụng ứng dụng.',
+              'Vui lòng đăng nhập lại để tiếp tục sử dụng ứng dụng.',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 15,

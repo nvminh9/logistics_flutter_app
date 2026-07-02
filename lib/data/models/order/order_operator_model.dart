@@ -40,11 +40,19 @@ class OperatorOrderListResponse extends BaseModel {
 
 /// Data wrapper với listOrder array
 class OperatorOrderData extends BaseModel {
+  final int totalItems;
+  final int totalPages;
+  final int pageNumber;
+  final int pageSize;
   final List<OperatorOrderModel> listOrder;
   final String? fromDate;
   final String? toDate;
 
   OperatorOrderData({
+    required this.totalItems,
+    required this.totalPages,
+    required this.pageNumber,
+    required this.pageSize,
     required this.listOrder,
     this.fromDate,
     this.toDate,
@@ -61,8 +69,7 @@ class OperatorOrderData extends BaseModel {
   // }
 
   factory OperatorOrderData.fromJson(Map<String, dynamic> json) {
-    final dynamic ordersNode =
-        json['listOrder'] ?? json['data'];
+    final dynamic ordersNode = json['listOrder'] ?? json['data'];
 
     List<dynamic> orders = [];
 
@@ -71,12 +78,14 @@ class OperatorOrderData extends BaseModel {
     }
 
     return OperatorOrderData(
+      totalItems: json['totalItems'] ?? orders.length,
+      totalPages: json['totalPages'] ?? 1,
+      pageNumber: json['pageNumber'] ?? 1,
+      pageSize: json['pageSize'] ?? orders.length,
       listOrder: orders
           .map(
-            (item) => OperatorOrderModel.fromJson(
-          item as Map<String, dynamic>,
-        ),
-      )
+            (item) => OperatorOrderModel.fromJson(item as Map<String, dynamic>),
+          )
           .toList(),
       fromDate: json['fromDate'],
       toDate: json['toDate'],
@@ -86,6 +95,10 @@ class OperatorOrderData extends BaseModel {
   @override
   Map<String, dynamic> toJson() {
     return {
+      'totalItems': totalItems,
+      'totalPages': totalPages,
+      'pageNumber': pageNumber,
+      'pageSize': pageSize,
       'listOrder': listOrder.map((order) => order.toJson()).toList(),
       'fromDate': fromDate,
       'toDate': toDate,
@@ -174,8 +187,10 @@ class OperatorOrderModel extends BaseModel {
       fromWhereName: json['fromWhereName'] ?? '',
       toLocationId: json['toLocationId'] ?? 0,
       toLocationName: json['toLocationName'] ?? '',
-      createdDate: DateTime.tryParse(json['createdDate'] ?? '') ?? DateTime.now(),
-      updatedDate: DateTime.tryParse(json['updatedDate'] ?? '') ?? DateTime.now(),
+      createdDate:
+          DateTime.tryParse(json['createdDate'] ?? '') ?? DateTime.now(),
+      updatedDate:
+          DateTime.tryParse(json['updatedDate'] ?? '') ?? DateTime.now(),
       status: json['status'] ?? 0,
       isDelete: json['isDelete'] ?? false,
       rowVersion: json['rowVersion'] ?? '',

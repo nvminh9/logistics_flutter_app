@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:nalogistics_app/core/base/base_controller.dart';
 import 'package:nalogistics_app/data/models/order/order_api_model.dart';
 import 'package:nalogistics_app/data/repositories/implementations/order_repository.dart';
@@ -75,7 +74,8 @@ class OrderController extends BaseController {
   Map<OrderStatus, int> get currentPageByStatus => _currentPageByStatus;
   Map<OrderStatus, int> get totalPagesByStatus => _totalPagesByStatus;
   Map<OrderStatus, int> get totalItemsByStatus => _totalItemsByStatus;
-  Map<OrderStatus, bool> get isPaginationLoadingByStatus => _isPaginationLoadingByStatus;
+  Map<OrderStatus, bool> get isPaginationLoadingByStatus =>
+      _isPaginationLoadingByStatus;
 
   OrderController() {
     _orderRepository = OrderRepository();
@@ -155,7 +155,10 @@ class OrderController extends BaseController {
     DateTime? fromDate,
     DateTime? toDate,
   }) async {
-    if (_initialDataLoaded && searchKey == null && fromDate == null && toDate == null) {
+    if (_initialDataLoaded &&
+        searchKey == null &&
+        fromDate == null &&
+        toDate == null) {
       return;
     }
 
@@ -177,7 +180,9 @@ class OrderController extends BaseController {
       print('🔄 Loading initial data for role: ${_userRole.displayName}...');
       if (_isSearching) print('   🔍 Searching for: $searchKey');
       if (hasDateFilter) {
-        print('   📅 Date filter: ${_formatDateForApi(_fromDate)} to ${_formatDateForApi(_toDate)}');
+        print(
+          '   📅 Date filter: ${_formatDateForApi(_fromDate)} to ${_formatDateForApi(_toDate)}',
+        );
       }
 
       // ⭐ Load page 1 for all tabs
@@ -196,7 +201,6 @@ class OrderController extends BaseController {
       notifyListeners();
 
       print('✅ Initial data loaded successfully!');
-
     } catch (e) {
       print('❌ Load Initial Data Error: $e');
       for (var status in activeStatuses) {
@@ -223,44 +227,51 @@ class OrderController extends BaseController {
       // final pageSize = 6; // Test pagination
 
       if (_userRole.isOperator) {
-        orders = await _getOperatorOrdersUseCase.execute(
+        final pagedResult = await _getOperatorOrdersUseCase.executePaged(
           filterStatus: status,
           pageNumber: pageNumber,
           pageSize: pageSize,
-          order: 'desc',        // ⭐ UPDATED: desc (newest first)
-          sortBy: 'orderDate',  // ⭐ UPDATED: orderDate
+          order: 'desc', // ⭐ UPDATED: desc (newest first)
+          sortBy: 'orderDate', // ⭐ UPDATED: orderDate
           searchKey: searchKey,
           fromDate: fromDate,
           toDate: toDate,
         );
+        orders = pagedResult.orders;
+        _currentPageByStatus[status] = pagedResult.pageNumber;
+        _totalPagesByStatus[status] = pagedResult.totalPages;
+        _totalItemsByStatus[status] = pagedResult.totalItems;
       } else {
         orders = await _getOrdersUseCase.execute(
           filterStatus: status,
           pageNumber: pageNumber,
           pageSize: pageSize,
-          order: 'desc',        // ⭐ UPDATED: desc (newest first)
-          sortBy: 'orderDate',  // ⭐ UPDATED: orderDate
+          order: 'desc', // ⭐ UPDATED: desc (newest first)
+          sortBy: 'orderDate', // ⭐ UPDATED: orderDate
           searchKey: searchKey,
         );
       }
 
       _ordersByStatus[status] = orders;
-      _currentPageByStatus[status] = pageNumber;
+      if (!_userRole.isOperator) {
+        _currentPageByStatus[status] = pageNumber;
 
-      // ⭐ Calculate total pages (giả sử API không trả về total count)
-      // Nếu số orders < pageSize thì đây là trang cuối
-      if (orders.length < pageSize) {
-        _totalPagesByStatus[status] = pageNumber;
-      } else {
-        // Nếu có đủ pageSize items, có thể có trang tiếp theo
-        _totalPagesByStatus[status] = pageNumber + 1;
+        // ⭐ Calculate total pages (giả sử API không trả về total count)
+        // Nếu số orders < pageSize thì đây là trang cuối
+        if (orders.length < pageSize) {
+          _totalPagesByStatus[status] = pageNumber;
+        } else {
+          // Nếu có đủ pageSize items, có thể có trang tiếp theo
+          _totalPagesByStatus[status] = pageNumber + 1;
+        }
+
+        _totalItemsByStatus[status] = orders.length;
       }
-
-      _totalItemsByStatus[status] = orders.length;
       _loadingByStatus[status] = false;
 
-      print('   ✅ ${status.shortName}: Loaded page $pageNumber with ${orders.length} orders');
-
+      print(
+        '   ✅ ${status.shortName}: Loaded page $pageNumber with ${orders.length} orders',
+      );
     } catch (e) {
       print('   ❌ ${status.shortName}: Error loading page $pageNumber: $e');
       _errorByStatus[status] = e.toString();
@@ -291,7 +302,6 @@ class OrderController extends BaseController {
 
       _isPaginationLoadingByStatus[status] = false;
       notifyListeners();
-
     } catch (e) {
       print('❌ Go To Page Error: $e');
       _isPaginationLoadingByStatus[status] = false;
@@ -345,11 +355,11 @@ class OrderController extends BaseController {
 
   // ⭐ UPDATED: Refresh orders
   Future<void> refreshOrders(
-      OrderStatus status, {
-        String? searchKey,
-        DateTime? fromDate,
-        DateTime? toDate,
-      }) async {
+    OrderStatus status, {
+    String? searchKey,
+    DateTime? fromDate,
+    DateTime? toDate,
+  }) async {
     if (!activeStatuses.contains(status)) return;
 
     try {
@@ -369,7 +379,6 @@ class OrderController extends BaseController {
       );
 
       notifyListeners();
-
     } catch (e) {
       print('❌ Refresh Error: $e');
       _loadingByStatus[status] = false;
@@ -401,9 +410,7 @@ class OrderController extends BaseController {
 
     notifyListeners();
 
-    await loadInitialData(
-      searchKey: keyword.isEmpty ? null : keyword,
-    );
+    await loadInitialData(searchKey: keyword.isEmpty ? null : keyword);
   }
 
   // ⭐ Refresh all tabs
@@ -431,11 +438,9 @@ class OrderController extends BaseController {
   bool isLoadingForStatus(OrderStatus status) =>
       _loadingByStatus[status] ?? false;
 
-  bool hasErrorForStatus(OrderStatus status) =>
-      _errorByStatus[status] != null;
+  bool hasErrorForStatus(OrderStatus status) => _errorByStatus[status] != null;
 
-  String? getError(OrderStatus status) =>
-      _errorByStatus[status];
+  String? getError(OrderStatus status) => _errorByStatus[status];
 
   List<OrderApiModel> getOrders(OrderStatus status) =>
       _ordersByStatus[status] ?? [];
@@ -443,7 +448,7 @@ class OrderController extends BaseController {
   int getTotalOrdersCount() {
     return activeStatuses.fold(
       0,
-          (sum, status) => sum + (_ordersByStatus[status]?.length ?? 0),
+      (sum, status) => sum + (_ordersByStatus[status]?.length ?? 0),
     );
   }
 

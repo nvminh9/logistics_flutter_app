@@ -45,6 +45,7 @@ class OrderDetailModel extends BaseModel {
   final String truckNo;
   final String rmoocNo;
   final int status;
+  final int cargoTypeId;
   final DateTime orderDate;
   final List<OrderImageModel> orderImageList;
 
@@ -58,6 +59,7 @@ class OrderDetailModel extends BaseModel {
     required this.truckNo,
     required this.rmoocNo,
     required this.status,
+    required this.cargoTypeId,
     required this.orderDate,
     this.orderImageList = const [],
   });
@@ -73,10 +75,12 @@ class OrderDetailModel extends BaseModel {
       truckNo: json['truckNo'] ?? '',
       rmoocNo: json['rmoocNo'] ?? '',
       status: json['status'] ?? 0,
+      cargoTypeId: json['cargoTypeId'] ?? 0,
       orderDate: DateTime.tryParse(json['orderDate'] ?? '') ?? DateTime.now(),
-      orderImageList: (json['orderImageList'] as List<dynamic>?)
-          ?.map((item) => OrderImageModel.fromJson(item))
-          .toList() ??
+      orderImageList:
+          (json['orderImageList'] as List<dynamic>?)
+              ?.map((item) => OrderImageModel.fromJson(item))
+              .toList() ??
           [],
     );
   }
@@ -93,6 +97,7 @@ class OrderDetailModel extends BaseModel {
       'truckNo': truckNo,
       'rmoocNo': rmoocNo,
       'status': status,
+      'cargoTypeId': cargoTypeId,
       'orderDate': orderDate.toIso8601String(),
     };
   }

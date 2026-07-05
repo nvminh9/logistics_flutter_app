@@ -44,9 +44,7 @@ class OperatorOrderDetailController extends BaseController {
 
       print('📦 Loading operator order detail for ID: $orderID');
 
-      final detail = await _getOrderDetailUseCase.execute(
-        orderID: orderID,
-      );
+      final detail = await _getOrderDetailUseCase.execute(orderID: orderID);
 
       _orderDetail = detail;
 
@@ -124,7 +122,8 @@ class OperatorOrderDetailController extends BaseController {
       notifyListeners();
 
       // Sử dụng orderID từ createdDate như trong API
-      final orderIdString = _orderDetail!.createdDate.millisecondsSinceEpoch.toString();
+      final orderIdString = _orderDetail!.createdDate.millisecondsSinceEpoch
+          .toString();
 
       print('🔄 Confirming pending order: ${_currentOrderID ?? orderIdString}');
 
@@ -138,7 +137,6 @@ class OperatorOrderDetailController extends BaseController {
       notifyListeners();
 
       return true;
-
     } catch (e) {
       print('❌ Confirm Order Error: $e');
       setError(e.toString());
@@ -164,7 +162,9 @@ class OperatorOrderDetailController extends BaseController {
 
       // Gọi API update status cho Operator
       await _orderRepository.updateOperatorOrderStatus(
-        orderID: _currentOrderID ?? _orderDetail!.createdDate.millisecondsSinceEpoch.toString(),
+        orderID:
+            _currentOrderID ??
+            _orderDetail!.createdDate.millisecondsSinceEpoch.toString(),
         statusValue: newStatus.value,
       );
 
@@ -174,7 +174,6 @@ class OperatorOrderDetailController extends BaseController {
       notifyListeners();
 
       return true;
-
     } catch (e) {
       print('❌ Update Order Status Error: $e');
       setError(e.toString());
@@ -197,7 +196,9 @@ class OperatorOrderDetailController extends BaseController {
 
     while (retryCount < maxRetries) {
       try {
-        print('🔄 Reloading order detail (attempt ${retryCount + 1}/$maxRetries)');
+        print(
+          '🔄 Reloading order detail (attempt ${retryCount + 1}/$maxRetries)',
+        );
 
         // Don't set loading state during reload to avoid UI flicker
         clearError();
@@ -210,7 +211,6 @@ class OperatorOrderDetailController extends BaseController {
         print('✅ Order detail reloaded successfully');
         notifyListeners();
         return; // Success, exit
-
       } catch (e) {
         retryCount++;
         print('❌ Reload attempt $retryCount failed: $e');
@@ -320,12 +320,16 @@ class OperatorOrderDetailController extends BaseController {
       print('📤 Starting upload of ${_pendingImages.length} images...');
 
       // Prepare data for upload
-      final imagesToUpload = _pendingImages.map((img) => {
-        'file': img.imageFile,
-        'description': img.description.isEmpty
-            ? 'Ảnh đơn hàng ${DateTime.now().toString().split('.')[0]}'
-            : img.description,
-      }).toList();
+      final imagesToUpload = _pendingImages
+          .map(
+            (img) => {
+              'file': img.imageFile,
+              'description': img.description.isEmpty
+                  ? 'Ảnh đơn hàng ${DateTime.now().toString().split('.')[0]}'
+                  : img.description,
+            },
+          )
+          .toList();
 
       // Upload with progress callback
       final results = await _orderRepository.uploadMultipleImages(
@@ -345,7 +349,9 @@ class OperatorOrderDetailController extends BaseController {
 
       if (failCount > 0) {
         print('⚠️ Some uploads failed: $failCount images');
-        setError('Một số ảnh upload thất bại: $failCount/$_totalImagesToUpload');
+        setError(
+          'Một số ảnh upload thất bại: $failCount/$_totalImagesToUpload',
+        );
       }
 
       // Clear pending images only for successful uploads
@@ -364,7 +370,6 @@ class OperatorOrderDetailController extends BaseController {
       notifyListeners();
 
       return successCount > 0;
-
     } catch (e) {
       print('❌ Upload Images Error: $e');
       setError('Lỗi upload ảnh: ${e.toString()}');
@@ -409,7 +414,6 @@ class OperatorOrderDetailController extends BaseController {
         setError(response.message);
         return false;
       }
-
     } catch (e) {
       print('❌ Upload Single Image Error: $e');
       setError('Lỗi upload ảnh: ${e.toString()}');
@@ -522,6 +526,7 @@ class OperatorOrderDetailController extends BaseController {
       fromWhereName: _orderDetail!.fromWhereName,
       toLocationName: _orderDetail!.toLocationName,
       status: _orderDetail!.status,
+      cargoTypeId: _orderDetail!.cargoTypeId,
       rowVersion: _orderDetail!.rowVersion,
       createdDate: _orderDetail!.createdDate,
       orderLineList1: _orderDetail!.orderLineList1,
@@ -581,7 +586,7 @@ class OperatorOrderDetailController extends BaseController {
     if (_orderDetail?.driverId == null) return null;
 
     return _driverList.firstWhere(
-          (d) => d.driverID == _orderDetail!.driverId,
+      (d) => d.driverID == _orderDetail!.driverId,
       orElse: () => DriverItemModel(
         driverID: _orderDetail!.driverId!,
         driverName: _orderDetail!.driverName,
@@ -686,6 +691,7 @@ class OperatorOrderDetailController extends BaseController {
       fromWhereName: _orderDetail!.fromWhereName,
       toLocationName: _orderDetail!.toLocationName,
       status: _orderDetail!.status,
+      cargoTypeId: _orderDetail!.cargoTypeId,
       rowVersion: _orderDetail!.rowVersion,
       createdDate: _orderDetail!.createdDate,
       orderLineList1: _orderDetail!.orderLineList1,
@@ -743,7 +749,7 @@ class OperatorOrderDetailController extends BaseController {
     if (_orderDetail?.truckId == null) return null;
 
     return _truckList.firstWhere(
-          (t) => t.truckID == _orderDetail!.truckId,
+      (t) => t.truckID == _orderDetail!.truckId,
       orElse: () => TruckItemModel(
         truckID: _orderDetail!.truckId!,
         truckNo: _orderDetail!.truckNo,
@@ -846,6 +852,7 @@ class OperatorOrderDetailController extends BaseController {
       fromWhereName: _orderDetail!.fromWhereName,
       toLocationName: _orderDetail!.toLocationName,
       status: _orderDetail!.status,
+      cargoTypeId: _orderDetail!.cargoTypeId,
       rowVersion: _orderDetail!.rowVersion,
       createdDate: _orderDetail!.createdDate,
       orderLineList1: _orderDetail!.orderLineList1,
@@ -903,7 +910,7 @@ class OperatorOrderDetailController extends BaseController {
     if (_orderDetail?.rmoocId == null) return null;
 
     return _rmoocList.firstWhere(
-          (t) => t.rmoocID == _orderDetail!.rmoocId,
+      (t) => t.rmoocID == _orderDetail!.rmoocId,
       orElse: () => RmoocItemModel(
         rmoocID: _orderDetail!.rmoocId!,
         rmoocNo: _orderDetail!.rmoocNo,
@@ -977,9 +984,12 @@ class OperatorOrderDetailController extends BaseController {
 
     if (_hasUnsavedChanges) {
       print('⚠️ Detected unsaved changes:');
-      if (hasDriverChanged) print('   - Driver: $_originalDriverId → ${_orderDetail!.driverId}');
-      if (hasTruckChanged) print('   - Truck: $_originalTruckId → ${_orderDetail!.truckId}');
-      if (hasRmoocChanged) print('   - Rmooc: $_originalRmoocId → ${_orderDetail!.rmoocId}');
+      if (hasDriverChanged)
+        print('   - Driver: $_originalDriverId → ${_orderDetail!.driverId}');
+      if (hasTruckChanged)
+        print('   - Truck: $_originalTruckId → ${_orderDetail!.truckId}');
+      if (hasRmoocChanged)
+        print('   - Rmooc: $_originalRmoocId → ${_orderDetail!.rmoocId}');
     }
 
     notifyListeners();
@@ -1049,18 +1059,22 @@ class OperatorOrderDetailController extends BaseController {
         "ToLocationName": _orderDetail!.toLocationName,
         "Status": _orderDetail!.status,
         "CreatedDate": _orderDetail!.createdDate.toIso8601String(),
-        "OrderLineList": _orderDetail!.orderLineList1.map((e) => {
-          "OrderLineId": e.orderLineId,
-          "itemID": e.itemID,
-          "itemName": e.orderLineItem.itemName,
-          "itemDescription": e.itemDescription,
-          "fixedPrice": e.orderLineItem.fixedPrice,
-          "itemCost": e.itemCost.toInt(),
-          "hasInvoice": e.hasInvoice,
-          "invoiceNo": e.invoiceNo,
-          "invoiceName": e.invoiceName,
-          "isActive": e.isActive
-        }).toList(),
+        "OrderLineList": _orderDetail!.orderLineList1
+            .map(
+              (e) => {
+                "OrderLineId": e.orderLineId,
+                "itemID": e.itemID,
+                "itemName": e.orderLineItem.itemName,
+                "itemDescription": e.itemDescription,
+                "fixedPrice": e.orderLineItem.fixedPrice,
+                "itemCost": e.itemCost.toInt(),
+                "hasInvoice": e.hasInvoice,
+                "invoiceNo": e.invoiceNo,
+                "invoiceName": e.invoiceName,
+                "isActive": e.isActive,
+              },
+            )
+            .toList(),
       };
 
       // Call API

@@ -21,7 +21,8 @@ class OperatorOrderDetailPage extends StatefulWidget {
   const OperatorOrderDetailPage({super.key, required this.orderID});
 
   @override
-  State<OperatorOrderDetailPage> createState() => _OperatorOrderDetailPageState();
+  State<OperatorOrderDetailPage> createState() =>
+      _OperatorOrderDetailPageState();
 }
 
 class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
@@ -30,7 +31,10 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
   @override
   void initState() {
     super.initState();
-    _controller = Provider.of<OperatorOrderDetailController>(context, listen: false);
+    _controller = Provider.of<OperatorOrderDetailController>(
+      context,
+      listen: false,
+    );
     _loadOrderDetail();
   }
 
@@ -70,7 +74,9 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
       builder: (context) => WillPopScope(
         onWillPop: () async => false,
         child: AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -126,7 +132,9 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           ),
           backgroundColor: AppColors.statusDelivered,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           duration: const Duration(seconds: 3),
           padding: const EdgeInsets.all(16),
         ),
@@ -158,7 +166,8 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  _controller.errorMessage ?? 'Không thể xác nhận đơn hàng. Vui lòng thử lại.',
+                  _controller.errorMessage ??
+                      'Không thể xác nhận đơn hàng. Vui lòng thử lại.',
                   style: const TextStyle(fontSize: 14),
                 ),
               ),
@@ -166,7 +175,9 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           ),
           backgroundColor: AppColors.statusError,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           duration: const Duration(seconds: 4),
           action: SnackBarAction(
             label: 'Thử lại',
@@ -200,10 +211,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           const Expanded(
             child: Text(
               'Xác nhận đơn hàng',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -214,10 +222,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
         children: [
           const Text(
             'Bạn có chắc muốn xác nhận đơn hàng này?',
-            style: TextStyle(
-              fontSize: 16,
-              height: 1.5,
-            ),
+            style: TextStyle(fontSize: 16, height: 1.5),
           ),
           const SizedBox(height: 16),
           Container(
@@ -246,7 +251,9 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                 _buildDialogInfoRow(
                   icon: Icons.local_shipping,
                   label: 'Tài xế',
-                  value: order.driverName.isNotEmpty ? order.driverName : 'Chưa phân công',
+                  value: order.driverName.isNotEmpty
+                      ? order.driverName
+                      : 'Chưa phân công',
                 ),
               ],
             ),
@@ -343,10 +350,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           const Expanded(
             child: Text(
               'Chưa đủ thông tin',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -369,9 +373,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             decoration: BoxDecoration(
               color: AppColors.statusError.withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.statusError.withOpacity(0.2),
-              ),
+              border: Border.all(color: AppColors.statusError.withOpacity(0.2)),
             ),
             child: Column(
               children: missingItems.map((item) {
@@ -393,11 +395,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
                     children: [
-                      Icon(
-                        icon,
-                        size: 20,
-                        color: AppColors.statusError,
-                      ),
+                      Icon(icon, size: 20, color: AppColors.statusError),
                       const SizedBox(width: 12),
                       Text(
                         'Chưa chọn $item',
@@ -557,10 +555,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             const SizedBox(height: 16),
             const Text(
               'Có lỗi xảy ra',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -666,6 +661,8 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             const SizedBox(height: 16),
             _buildVehicleCard(order),
             const SizedBox(height: 16),
+            _buildCargoTypeCard(order),
+            const SizedBox(height: 16),
             _buildLocationCard(order),
             // const SizedBox(height: 16),
             // _buildOrderLinesCard(order),
@@ -673,7 +670,6 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             // ⭐ THÊM SECTION MỚI - Add Images Section
             const SizedBox(height: 16),
             const AddImagesSection(), // Widget mới
-
             // Existing images
             if (order.orderImageList.isNotEmpty) ...[
               const SizedBox(height: 16),
@@ -699,10 +695,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           ],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.orange.withOpacity(0.3),
-          width: 2,
-        ),
+        border: Border.all(color: Colors.orange.withOpacity(0.3), width: 2),
       ),
       child: Row(
         children: [
@@ -861,7 +854,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    DateFormatter.formatDate(order.orderDate),
+                    DateFormatter.formatDateTime(order.orderDate),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -898,9 +891,12 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                       order.billBookingNo,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 22,
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
                     ),
                   ),
                 ],
@@ -948,9 +944,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             decoration: BoxDecoration(
               color: AppColors.oceanTeal.withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.oceanTeal.withOpacity(0.2),
-              ),
+              border: Border.all(color: AppColors.oceanTeal.withOpacity(0.2)),
             ),
             child: Row(
               children: [
@@ -1013,7 +1007,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                 ),
 
                 // Change driver button
-                if(order?.orderStatus == OrderStatus.pending) ...[
+                if (order?.orderStatus == OrderStatus.pending) ...[
                   IconButton(
                     onPressed: () => _showDriverSelectionDialog(context),
                     icon: const Icon(Icons.edit),
@@ -1023,8 +1017,8 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                       backgroundColor: AppColors.oceanTeal.withOpacity(0.1),
                       padding: const EdgeInsets.all(12),
                     ),
-                  )
-                ]
+                  ),
+                ],
               ],
             ),
           ),
@@ -1035,9 +1029,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             decoration: BoxDecoration(
               color: AppColors.sectionBackground,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.hintText.withOpacity(0.2),
-              ),
+              border: Border.all(color: AppColors.hintText.withOpacity(0.2)),
             ),
             child: Column(
               children: [
@@ -1184,18 +1176,20 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                 ),
 
                 // Change truck button
-                if(order?.orderStatus == OrderStatus.pending) ...[
+                if (order?.orderStatus == OrderStatus.pending) ...[
                   IconButton(
                     onPressed: () => _showTruckSelectionDialog(context),
                     icon: const Icon(Icons.edit),
                     color: AppColors.containerOrange,
                     tooltip: 'Thay đổi xe',
                     style: IconButton.styleFrom(
-                      backgroundColor: AppColors.containerOrange.withOpacity(0.1),
+                      backgroundColor: AppColors.containerOrange.withOpacity(
+                        0.1,
+                      ),
                       padding: const EdgeInsets.all(12),
                     ),
                   ),
-                ]
+                ],
               ],
             ),
           ),
@@ -1206,9 +1200,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             decoration: BoxDecoration(
               color: AppColors.sectionBackground,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.hintText.withOpacity(0.2),
-              ),
+              border: Border.all(color: AppColors.hintText.withOpacity(0.2)),
             ),
             child: Column(
               children: [
@@ -1320,18 +1312,20 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                 ),
 
                 // Change truck button
-                if(order?.orderStatus == OrderStatus.pending) ...[
+                if (order?.orderStatus == OrderStatus.pending) ...[
                   IconButton(
                     onPressed: () => _showRmoocSelectionDialog(context),
                     icon: const Icon(Icons.edit),
                     color: AppColors.containerOrange,
                     tooltip: 'Thay đổi Rơ-mooc',
                     style: IconButton.styleFrom(
-                      backgroundColor: AppColors.containerOrange.withOpacity(0.1),
+                      backgroundColor: AppColors.containerOrange.withOpacity(
+                        0.1,
+                      ),
                       padding: const EdgeInsets.all(12),
                     ),
                   ),
-                ]
+                ],
               ],
             ),
           ),
@@ -1342,9 +1336,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             decoration: BoxDecoration(
               color: AppColors.sectionBackground,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.hintText.withOpacity(0.2),
-              ),
+              border: Border.all(color: AppColors.hintText.withOpacity(0.2)),
             ),
             child: Column(
               children: [
@@ -1462,6 +1454,34 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     );
   }
 
+  Widget _buildCargoTypeCard(OperatorOrderDetailModel order) {
+    return _buildInfoCard(
+      title: 'Loại hàng',
+      icon: Icons.category,
+      color: AppColors.containerOrange,
+      children: [
+        _buildInfoRow(
+          icon: Icons.inventory_2_outlined,
+          label: 'Loại hàng',
+          value: _getCargoTypeName(order.cargoTypeId),
+        ),
+      ],
+    );
+  }
+
+  String _getCargoTypeName(int cargoTypeId) {
+    switch (cargoTypeId) {
+      case 1:
+        return 'Nhập khẩu';
+      case 2:
+        return 'Xuất khẩu';
+      case 3:
+        return 'Trung chuyển';
+      default:
+        return 'Không xác định';
+    }
+  }
+
   Widget _buildOrderLinesCard(OperatorOrderDetailModel order) {
     final lines = order.orderLineList1;
     final totalCost = order.totalCost;
@@ -1475,10 +1495,8 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: lines.length,
-          separatorBuilder: (_, __) => Divider(
-            height: 24,
-            color: AppColors.hintText.withOpacity(0.2),
-          ),
+          separatorBuilder: (_, __) =>
+              Divider(height: 24, color: AppColors.hintText.withOpacity(0.2)),
           itemBuilder: (context, index) {
             final line = lines[index];
             return _buildOrderLineItem(line);
@@ -1520,7 +1538,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
 
     return _buildInfoCard(
       title: 'Hình ảnh đã tải lên', // ⭐ Changed title
-      icon: Icons.photo_library,  // ⭐ Changed icon
+      icon: Icons.photo_library, // ⭐ Changed icon
       color: AppColors.portGrey,
       children: [
         GridView.builder(
@@ -1635,9 +1653,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
       decoration: BoxDecoration(
         color: AppColors.sectionBackground,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.containerOrange.withOpacity(0.2),
-        ),
+        border: Border.all(color: AppColors.containerOrange.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1648,10 +1664,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
               const SizedBox(width: 6),
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.secondaryText,
-                ),
+                style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
               ),
             ],
           ),
@@ -1717,9 +1730,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
       decoration: BoxDecoration(
         color: AppColors.sectionBackground,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-        ),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1728,10 +1739,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             children: [
               Container(
                 padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                 child: Icon(icon, color: Colors.white, size: 16),
               ),
               const SizedBox(width: 8),
@@ -1748,7 +1756,11 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           ),
           const SizedBox(height: 12),
           Text(
-            label == "ĐIỂM LẤY" ? "Cảng nhận Container" : label == "ĐIỂM TRẢ" ? "Cảng hạ/trả Container" : "Unknow",
+            label == "ĐIỂM LẤY"
+                ? "Cảng nhận Container"
+                : label == "ĐIỂM TRẢ"
+                ? "Cảng hạ/trả Container"
+                : "Unknow",
             style: const TextStyle(
               fontSize: 14,
               color: AppColors.secondaryText,
@@ -1816,7 +1828,9 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                       line.orderLineItem.itemName,
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: isActive
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                         color: AppColors.primaryText,
                       ),
                     ),
@@ -1842,14 +1856,18 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: isActive ? AppColors.skyBlue : AppColors.primaryText,
+                      color: isActive
+                          ? AppColors.skyBlue
+                          : AppColors.primaryText,
                     ),
                   ),
                   if (line.itemCost > 0 &&
                       line.itemCost != line.orderLineItem.fixedPrice) ...[
                     const SizedBox(height: 2),
                     Text(
-                      MoneyFormatter.formatSimple(line.orderLineItem.fixedPrice),
+                      MoneyFormatter.formatSimple(
+                        line.orderLineItem.fixedPrice,
+                      ),
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.hintText,
@@ -1895,16 +1913,18 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     );
   }
 
-  Widget _buildImageItem(OrderImageModel image, int index, List<OrderImageModel> allImages) {
+  Widget _buildImageItem(
+    OrderImageModel image,
+    int index,
+    List<OrderImageModel> allImages,
+  ) {
     return GestureDetector(
       onTap: () => _openImageGallery(allImages, index),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.sectionBackground,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.hintText.withOpacity(0.2),
-          ),
+          border: Border.all(color: AppColors.hintText.withOpacity(0.2)),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
@@ -1914,13 +1934,10 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
               CachedNetworkImage(
                 imageUrl: image.url,
                 fit: BoxFit.cover,
-                placeholder: (context, url) => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                errorWidget: (context, url, error) => const Icon(
-                  Icons.error,
-                  color: AppColors.statusError,
-                ),
+                placeholder: (context, url) =>
+                    const Center(child: CircularProgressIndicator()),
+                errorWidget: (context, url, error) =>
+                    const Icon(Icons.error, color: AppColors.statusError),
               ),
               Positioned(
                 bottom: 0,
@@ -1960,10 +1977,8 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
   void _openImageGallery(List<OrderImageModel> images, int initialIndex) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ImageGalleryViewer(
-          images: images,
-          initialIndex: initialIndex,
-        ),
+        builder: (context) =>
+            ImageGalleryViewer(images: images, initialIndex: initialIndex),
       ),
     );
   }
@@ -1997,7 +2012,9 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             Expanded(
               flex: 2,
               child: OutlinedButton.icon(
-                onPressed: isUpdating ? null : () => _handleDiscardChanges(controller),
+                onPressed: isUpdating
+                    ? null
+                    : () => _handleDiscardChanges(controller),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   side: const BorderSide(color: AppColors.statusError),
@@ -2026,7 +2043,9 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             Expanded(
               flex: 3,
               child: ElevatedButton.icon(
-                onPressed: isUpdating ? null : () => _handleUpdateOrder(controller),
+                onPressed: isUpdating
+                    ? null
+                    : () => _handleUpdateOrder(controller),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.statusDelivered,
                   disabledBackgroundColor: AppColors.hintText,
@@ -2038,18 +2057,18 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
                 ),
                 icon: isUpdating
                     ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
                     : const Icon(
-                  Icons.check_circle,
-                  size: 20,
-                  color: Colors.white,
-                ),
+                        Icons.check_circle,
+                        size: 20,
+                        color: Colors.white,
+                      ),
                 label: Text(
                   isUpdating ? 'Đang lưu...' : 'Lưu thay đổi',
                   style: const TextStyle(
@@ -2066,8 +2085,10 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     );
   }
 
-// Handler methods
-  Future<void> _handleUpdateOrder(OperatorOrderDetailController controller) async {
+  // Handler methods
+  Future<void> _handleUpdateOrder(
+    OperatorOrderDetailController controller,
+  ) async {
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
@@ -2091,10 +2112,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             children: const [
               CircularProgressIndicator(color: AppColors.statusDelivered),
               SizedBox(height: 20),
-              Text(
-                'Đang cập nhật đơn hàng...',
-                style: TextStyle(fontSize: 16),
-              ),
+              Text('Đang cập nhật đơn hàng...', style: TextStyle(fontSize: 16)),
             ],
           ),
         ),
@@ -2163,13 +2181,13 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     }
   }
 
-  Future<void> _handleDiscardChanges(OperatorOrderDetailController controller) async {
+  Future<void> _handleDiscardChanges(
+    OperatorOrderDetailController controller,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             const Icon(Icons.warning, color: AppColors.statusDelayed),
@@ -2179,7 +2197,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
         ),
         content: const Text(
           'Bạn có chắc muốn hủy các thay đổi? '
-              'Tất cả thay đổi chưa lưu sẽ bị mất.',
+          'Tất cả thay đổi chưa lưu sẽ bị mất.',
           style: TextStyle(fontSize: 15),
         ),
         actions: [
@@ -2219,9 +2237,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     final order = controller.orderDetail!;
 
     return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Row(
         children: [
           Container(
@@ -2238,10 +2254,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
           ),
           const SizedBox(width: 12),
           const Expanded(
-            child: Text(
-              'Xác nhận cập nhật',
-              style: TextStyle(fontSize: 20),
-            ),
+            child: Text('Xác nhận cập nhật', style: TextStyle(fontSize: 20)),
           ),
         ],
       ),
@@ -2307,10 +2320,7 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
             backgroundColor: AppColors.statusDelivered,
           ),
           icon: const Icon(Icons.check, size: 18),
-          label: const Text(
-            'Xác nhận',
-            style: TextStyle(color: Colors.white),
-          ),
+          label: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
         ),
       ],
     );

@@ -25,7 +25,8 @@ class OrderDetailPage extends StatefulWidget {
   State<OrderDetailPage> createState() => _OrderDetailPageState();
 }
 
-class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderStateMixin {
+class _OrderDetailPageState extends State<OrderDetailPage>
+    with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
@@ -54,18 +55,12 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeOut,
-    ));
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOut));
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
   }
 
   @override
@@ -77,7 +72,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
   }
 
   Future<void> _loadOrderDetail() async {
-    final controller = Provider.of<OrderDetailController>(context, listen: false);
+    final controller = Provider.of<OrderDetailController>(
+      context,
+      listen: false,
+    );
     await controller.loadOrderDetail(widget.orderID);
 
     if (mounted && controller.orderDetail != null) {
@@ -87,7 +85,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
   }
 
   Future<void> _updateOrderStatus(OrderStatus newStatus) async {
-    final controller = Provider.of<OrderDetailController>(context, listen: false);
+    final controller = Provider.of<OrderDetailController>(
+      context,
+      listen: false,
+    );
 
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
@@ -97,11 +98,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(
-              Icons.info_outline,
-              color: AppColors.maritimeBlue,
-              size: 24,
-            ),
+            Icon(Icons.info_outline, color: AppColors.maritimeBlue, size: 24),
             const SizedBox(width: 8),
             const Text('Xác nhận cập nhật'),
           ],
@@ -117,9 +114,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
               decoration: BoxDecoration(
                 color: newStatus.color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: newStatus.color.withOpacity(0.3),
-                ),
+                border: Border.all(color: newStatus.color.withOpacity(0.3)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -179,7 +174,9 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
         builder: (context) => WillPopScope(
           onWillPop: () async => false,
           child: AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -212,13 +209,17 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text('Đã cập nhật trạng thái thành "${newStatus.displayName}"'),
+                  child: Text(
+                    'Đã cập nhật trạng thái thành "${newStatus.displayName}"',
+                  ),
                 ),
               ],
             ),
             backgroundColor: AppColors.statusDelivered,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -227,9 +228,11 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
         await controller.reloadOrderDetail();
 
         // Also refresh the order list in background
-        final orderController = Provider.of<OrderController>(context, listen: false);
+        final orderController = Provider.of<OrderController>(
+          context,
+          listen: false,
+        );
         orderController.loadInitialData();
-
       } else {
         // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
@@ -245,7 +248,9 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
             ),
             backgroundColor: AppColors.statusError,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             duration: const Duration(seconds: 4),
             action: SnackBarAction(
               label: 'Thử lại',
@@ -267,25 +272,18 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
 
     _driverSeenTimer?.cancel();
 
-    _driverSeenTimer = Timer(
-      const Duration(seconds: 5),
-          () {
-        if (!mounted) return;
+    _driverSeenTimer = Timer(const Duration(seconds: 5), () {
+      if (!mounted) return;
 
-        context
-            .read<OrderDetailController>()
-            .updateDriverSeenAt();
-      },
-    );
+      context.read<OrderDetailController>().updateDriverSeenAt();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primaryBackground,
-      appBar: const AppBarWidget(
-        title: 'Chi tiết đơn hàng',
-      ),
+      appBar: const AppBarWidget(title: 'Chi tiết đơn hàng'),
       body: Consumer<OrderDetailController>(
         builder: (context, controller, child) {
           if (controller.isLoading) {
@@ -371,6 +369,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
                       const SizedBox(height: 16),
                       _buildOrderInfoCard(order),
                       const SizedBox(height: 16),
+                      _buildCargoTypeCard(order),
+                      const SizedBox(height: 16),
                       _buildLocationCard(order),
                       const SizedBox(height: 16),
                       _buildVehicleCard(order),
@@ -446,24 +446,24 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
   void _openImageGallery(List<OrderImageModel> images, int initialIndex) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ImageGalleryViewer(
-          images: images,
-          initialIndex: initialIndex,
-        ),
+        builder: (context) =>
+            ImageGalleryViewer(images: images, initialIndex: initialIndex),
       ),
     );
   }
 
-  Widget _buildImageItem(OrderImageModel image, int index, List<OrderImageModel> allImages) {
+  Widget _buildImageItem(
+    OrderImageModel image,
+    int index,
+    List<OrderImageModel> allImages,
+  ) {
     return GestureDetector(
       onTap: () => _openImageGallery(allImages, index),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.sectionBackground,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.hintText.withOpacity(0.2),
-          ),
+          border: Border.all(color: AppColors.hintText.withOpacity(0.2)),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
@@ -473,13 +473,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
               CachedNetworkImage(
                 imageUrl: image.url,
                 fit: BoxFit.cover,
-                placeholder: (context, url) => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                errorWidget: (context, url, error) => const Icon(
-                  Icons.error,
-                  color: AppColors.statusError,
-                ),
+                placeholder: (context, url) =>
+                    const Center(child: CircularProgressIndicator()),
+                errorWidget: (context, url, error) =>
+                    const Icon(Icons.error, color: AppColors.statusError),
               ),
               Positioned(
                 bottom: 0,
@@ -522,7 +519,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
 
     return _buildInfoCard(
       title: 'Hình ảnh đã tải lên', // ⭐ Changed title
-      icon: Icons.photo_library,  // ⭐ Changed icon
+      icon: Icons.photo_library, // ⭐ Changed icon
       color: AppColors.portGrey,
       children: [
         GridView.builder(
@@ -580,7 +577,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: _getStatusColor(order.orderStatus).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -661,7 +661,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
           _buildInfoRow(
             icon: Icons.calendar_today,
             label: 'Ngày giao hàng',
-            value: DateFormatter.formatDate(order.orderDate),
+            value: DateFormatter.formatDateTime(order.orderDate),
           ),
         ],
       ),
@@ -864,6 +864,34 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
     );
   }
 
+  Widget _buildCargoTypeCard(dynamic order) {
+    return _buildInfoCard(
+      title: 'Loại hàng',
+      icon: Icons.category,
+      color: AppColors.containerOrange,
+      children: [
+        _buildInfoRow(
+          icon: Icons.inventory_2_outlined,
+          label: 'Loại hàng',
+          value: _getCargoTypeName(order.cargoTypeId),
+        ),
+      ],
+    );
+  }
+
+  String _getCargoTypeName(int cargoTypeId) {
+    switch (cargoTypeId) {
+      case 1:
+        return 'Nhập khẩu';
+      case 2:
+        return 'Xuất khẩu';
+      case 3:
+        return 'Trung chuyển';
+      default:
+        return 'Không xác định';
+    }
+  }
+
   Widget _buildVehicleCard(dynamic order) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -937,10 +965,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
       decoration: BoxDecoration(
         color: color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1196,7 +1221,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> with TickerProviderSt
     }
 
     // Nếu đơn hàng đã giao thì không hiện nút xác nhận nữa
-    if(nextStatus == OrderStatus.completed){
+    if (nextStatus == OrderStatus.completed) {
       return Container();
     }
 

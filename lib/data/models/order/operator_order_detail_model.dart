@@ -57,6 +57,7 @@ class OperatorOrderDetailModel extends BaseModel {
   final String fromWhereName;
   final String toLocationName;
   final int status;
+  final int cargoTypeId;
   final String rowVersion;
   final DateTime createdDate;
   final List<OrderLineModel> orderLineList1;
@@ -83,6 +84,7 @@ class OperatorOrderDetailModel extends BaseModel {
     required this.fromWhereName,
     required this.toLocationName,
     required this.status,
+    required this.cargoTypeId,
     required this.rowVersion,
     required this.createdDate,
     required this.orderLineList1,
@@ -111,19 +113,24 @@ class OperatorOrderDetailModel extends BaseModel {
       fromWhereName: json['fromWhereName'] ?? '',
       toLocationName: json['toLocationName'] ?? '',
       status: json['status'] ?? 0,
+      cargoTypeId: json['cargoTypeId'] ?? 0,
       rowVersion: json['rowVersion'] ?? '',
-      createdDate: DateTime.tryParse(json['createdDate'] ?? '') ?? DateTime.now(),
-      orderLineList1: (json['orderLineList1'] as List<dynamic>?)
-          ?.map((item) => OrderLineModel.fromJson(item))
-          .toList() ??
+      createdDate:
+          DateTime.tryParse(json['createdDate'] ?? '') ?? DateTime.now(),
+      orderLineList1:
+          (json['orderLineList1'] as List<dynamic>?)
+              ?.map((item) => OrderLineModel.fromJson(item))
+              .toList() ??
           [],
-      orderLineList: (json['orderLineList'] as List<dynamic>?)
-          ?.map((item) => OrderLineModel.fromJson(item))
-          .toList() ??
+      orderLineList:
+          (json['orderLineList'] as List<dynamic>?)
+              ?.map((item) => OrderLineModel.fromJson(item))
+              .toList() ??
           [],
-      orderImageList: (json['orderImageList'] as List<dynamic>?)
-          ?.map((item) => OrderImageModel.fromJson(item))
-          .toList() ??
+      orderImageList:
+          (json['orderImageList'] as List<dynamic>?)
+              ?.map((item) => OrderImageModel.fromJson(item))
+              .toList() ??
           [],
     );
   }
@@ -150,6 +157,7 @@ class OperatorOrderDetailModel extends BaseModel {
       'fromWhereName': fromWhereName,
       'toLocationName': toLocationName,
       'status': status,
+      'cargoTypeId': cargoTypeId,
       'rowVersion': rowVersion,
       'createdDate': createdDate.toIso8601String(),
       'orderLineList1': orderLineList1.map((e) => e.toJson()).toList(),
@@ -164,7 +172,9 @@ class OperatorOrderDetailModel extends BaseModel {
   double get totalCost {
     return orderLineList1.fold(
       0.0,
-          (sum, line) => sum + (line.itemCost > 0 ? line.itemCost : line.orderLineItem.fixedPrice),
+      (sum, line) =>
+          sum +
+          (line.itemCost > 0 ? line.itemCost : line.orderLineItem.fixedPrice),
     );
   }
 

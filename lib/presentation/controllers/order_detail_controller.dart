@@ -43,9 +43,7 @@ class OrderDetailController extends BaseController {
 
       print('📦 Loading order detail for ID: $orderID');
 
-      final detail = await _getOrderDetailUseCase.execute(
-        orderID: orderID,
-      );
+      final detail = await _getOrderDetailUseCase.execute(orderID: orderID);
 
       _orderDetail = detail;
 
@@ -56,7 +54,6 @@ class OrderDetailController extends BaseController {
 
       setLoading(false);
       notifyListeners();
-
     } catch (e) {
       print('❌ Load Order Detail Error: $e');
       setError(e.toString());
@@ -74,7 +71,9 @@ class OrderDetailController extends BaseController {
       clearError();
       notifyListeners();
 
-      print('🔄 Updating order ${_orderDetail!.orderID} to ${newStatus.displayName}');
+      print(
+        '🔄 Updating order ${_orderDetail!.orderID} to ${newStatus.displayName}',
+      );
 
       // Gọi API update status
       final updatedData = await _updateOrderStatusUseCase.execute(
@@ -93,6 +92,7 @@ class OrderDetailController extends BaseController {
         truckNo: updatedData.truckNo,
         rmoocNo: updatedData.rmoocNo,
         status: updatedData.status,
+        cargoTypeId: _orderDetail!.cargoTypeId,
         orderDate: updatedData.orderDate,
         // orderImageList: updatedData.orderImageList,
       );
@@ -102,7 +102,6 @@ class OrderDetailController extends BaseController {
 
       print('✅ Order status updated successfully to ${newStatus.displayName}');
       return true;
-
     } catch (e) {
       print('❌ Update Order Status Error: $e');
       setError(e.toString());
@@ -123,8 +122,12 @@ class OrderDetailController extends BaseController {
   Future<void> updateDriverSeenAt() async {
     try {
       print((await _authRepository.getRoleName()).toString().toUpperCase());
-      print(!((await _authRepository.getRoleName()).toString().toUpperCase() == 'DRIVER'));
-      if (!((await _authRepository.getRoleName()).toString().toUpperCase() == 'DRIVER')) {
+      print(
+        !((await _authRepository.getRoleName()).toString().toUpperCase() ==
+            'DRIVER'),
+      );
+      if (!((await _authRepository.getRoleName()).toString().toUpperCase() ==
+          'DRIVER')) {
         return;
       }
 
@@ -138,9 +141,7 @@ class OrderDetailController extends BaseController {
 
       _driverSeenSent = true;
 
-      await _orderRepository.updateDriverSeenAt(
-        orderID: _currentOrderID!,
-      );
+      await _orderRepository.updateDriverSeenAt(orderID: _currentOrderID!);
     } catch (e) {
       print('❌ DriverSeenAt update failed: $e');
     }
@@ -243,12 +244,16 @@ class OrderDetailController extends BaseController {
       print('📤 Starting upload of ${_pendingImages.length} images...');
 
       // Prepare data for upload
-      final imagesToUpload = _pendingImages.map((img) => {
-        'file': img.imageFile,
-        'description': img.description.isEmpty
-            ? 'Ảnh đơn hàng ${DateTime.now().toString().split('.')[0]}'
-            : img.description,
-      }).toList();
+      final imagesToUpload = _pendingImages
+          .map(
+            (img) => {
+              'file': img.imageFile,
+              'description': img.description.isEmpty
+                  ? 'Ảnh đơn hàng ${DateTime.now().toString().split('.')[0]}'
+                  : img.description,
+            },
+          )
+          .toList();
 
       // Upload with progress callback
       final results = await _orderRepository.uploadMultipleImages(
@@ -268,7 +273,9 @@ class OrderDetailController extends BaseController {
 
       if (failCount > 0) {
         print('⚠️ Some uploads failed: $failCount images');
-        setError('Một số ảnh upload thất bại: $failCount/$_totalImagesToUpload');
+        setError(
+          'Một số ảnh upload thất bại: $failCount/$_totalImagesToUpload',
+        );
       }
 
       // Clear pending images only for successful uploads
@@ -287,7 +294,6 @@ class OrderDetailController extends BaseController {
       notifyListeners();
 
       return successCount > 0;
-
     } catch (e) {
       print('❌ Upload Images Error: $e');
       setError('Lỗi upload ảnh: ${e.toString()}');
@@ -332,7 +338,6 @@ class OrderDetailController extends BaseController {
         setError(response.message);
         return false;
       }
-
     } catch (e) {
       print('❌ Upload Single Image Error: $e');
       setError('Lỗi upload ảnh: ${e.toString()}');

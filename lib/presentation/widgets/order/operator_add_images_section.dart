@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
+import 'package:nalogistics_app/core/utils/attachment_utils.dart';
 import 'package:nalogistics_app/presentation/controllers/operator_order_detail_controller.dart';
+import 'package:nalogistics_app/data/services/media/attachment_picker_service.dart';
 import 'package:nalogistics_app/data/services/media/image_picker_service.dart';
 import 'package:nalogistics_app/data/models/order/pending_image_model.dart';
 
@@ -56,7 +58,7 @@ class AddImagesSection extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(
-            Icons.add_photo_alternate,
+            Icons.attach_file,
             color: AppColors.containerOrange,
             size: 20,
           ),
@@ -64,7 +66,7 @@ class AddImagesSection extends StatelessWidget {
         const SizedBox(width: 12),
         const Expanded(
           child: Text(
-            'Thêm hình ảnh',
+            'Đính kèm cho đơn hàng',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -74,16 +76,13 @@ class AddImagesSection extends StatelessWidget {
         ),
         if (hasPendingImages) ...[
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 6,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.containerOrange.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              '${controller.pendingImages.length} ảnh',
+              '${controller.pendingImages.length} tệp',
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -96,7 +95,10 @@ class AddImagesSection extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, OperatorOrderDetailController controller) {
+  Widget _buildEmptyState(
+    BuildContext context,
+    OperatorOrderDetailController controller,
+  ) {
     return Column(
       children: [
         Container(
@@ -105,20 +107,18 @@ class AddImagesSection extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.sectionBackground,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.hintText.withOpacity(0.2),
-            ),
+            border: Border.all(color: AppColors.hintText.withOpacity(0.2)),
           ),
           child: Column(
             children: [
               Icon(
-                Icons.add_a_photo,
+                Icons.attach_file,
                 size: 64,
                 color: AppColors.hintText.withOpacity(0.5),
               ),
               const SizedBox(height: 16),
               const Text(
-                'Chưa có ảnh nào',
+                'Chưa có tệp đính kèm',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -127,12 +127,9 @@ class AddImagesSection extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Thêm ảnh để ghi nhận tình trạng đơn hàng',
+                'Đính kèm hình ảnh, PDF, Excel hoặc tài liệu liên quan',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.secondaryText,
-                ),
+                style: TextStyle(fontSize: 13, color: AppColors.secondaryText),
               ),
             ],
           ),
@@ -146,17 +143,29 @@ class AddImagesSection extends StatelessWidget {
                 controller: controller,
                 icon: Icons.camera_alt,
                 label: 'Chụp ảnh',
-                onTap: () => _handleAddImage(context, controller, fromCamera: true),
+                onTap: () =>
+                    _handleAddImage(context, controller, fromCamera: true),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: _buildAddButton(
                 context: context,
                 controller: controller,
                 icon: Icons.photo_library,
                 label: 'Chọn ảnh',
-                onTap: () => _handleAddImage(context, controller, fromCamera: false),
+                onTap: () =>
+                    _handleAddImage(context, controller, fromCamera: false),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildAddButton(
+                context: context,
+                controller: controller,
+                icon: Icons.upload_file,
+                label: 'Chọn tệp',
+                onTap: () => _handleAddAttachment(context, controller),
               ),
             ),
           ],
@@ -199,7 +208,10 @@ class AddImagesSection extends StatelessWidget {
     );
   }
 
-  Widget _buildPendingImagesList(BuildContext context, OperatorOrderDetailController controller) {
+  Widget _buildPendingImagesList(
+    BuildContext context,
+    OperatorOrderDetailController controller,
+  ) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -222,10 +234,10 @@ class AddImagesSection extends StatelessWidget {
   }
 
   Widget _buildPendingImageItem(
-      BuildContext context,
-      OperatorOrderDetailController controller,
-      PendingImageModel image,
-      ) {
+    BuildContext context,
+    OperatorOrderDetailController controller,
+    PendingImageModel image,
+  ) {
     return GestureDetector(
       onTap: () => _showImagePreviewDialog(context, controller, image),
       child: Stack(
@@ -240,12 +252,7 @@ class AddImagesSection extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.file(
-                image.imageFile,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-              ),
+              child: _buildPendingAttachmentPreview(image),
             ),
           ),
 
@@ -291,11 +298,7 @@ class AddImagesSection extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.close,
-                  color: Colors.white,
-                  size: 16,
-                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 16),
               ),
             ),
           ),
@@ -304,7 +307,54 @@ class AddImagesSection extends StatelessWidget {
     );
   }
 
-  Widget _buildAddMoreButton(BuildContext context, OperatorOrderDetailController controller) {
+  Widget _buildPendingAttachmentPreview(PendingImageModel attachment) {
+    if (AttachmentUtils.isImagePath(attachment.imageFile.path)) {
+      return Image.file(
+        attachment.imageFile,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
+
+    final fileName = AttachmentUtils.fileNameFromPath(
+      attachment.imageFile.path,
+    );
+
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: AppColors.sectionBackground,
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            AttachmentUtils.iconForPath(attachment.imageFile.path),
+            color: AppColors.maritimeBlue,
+            size: 34,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            fileName,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddMoreButton(
+    BuildContext context,
+    OperatorOrderDetailController controller,
+  ) {
     return GestureDetector(
       onTap: () => _handleAddImage(context, controller),
       child: Container(
@@ -320,13 +370,13 @@ class AddImagesSection extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.add_photo_alternate,
+              Icons.add_to_drive,
               size: 32,
               color: AppColors.maritimeBlue.withOpacity(0.6),
             ),
             const SizedBox(height: 8),
             Text(
-              'Thêm ảnh',
+              'Thêm tệp',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -339,7 +389,10 @@ class AddImagesSection extends StatelessWidget {
     );
   }
 
-  Widget _buildUploadButton(BuildContext context, OperatorOrderDetailController controller) {
+  Widget _buildUploadButton(
+    BuildContext context,
+    OperatorOrderDetailController controller,
+  ) {
     final isUploading = controller.isUploadingImages;
     final current = controller.uploadProgress;
     final total = controller.totalImagesToUpload;
@@ -424,7 +477,9 @@ class AddImagesSection extends StatelessWidget {
           width: double.infinity,
           height: 52,
           child: ElevatedButton.icon(
-            onPressed: isUploading ? null : () => _handleUploadImages(context, controller),
+            onPressed: isUploading
+                ? null
+                : () => _handleUploadImages(context, controller),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.containerOrange,
               disabledBackgroundColor: AppColors.hintText,
@@ -441,7 +496,7 @@ class AddImagesSection extends StatelessWidget {
             label: Text(
               isUploading
                   ? 'Đang tải lên ($current/$total)...'
-                  : 'Tải lên ${controller.pendingImages.length} ảnh',
+                  : 'Tải lên ${controller.pendingImages.length} tệp',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -459,10 +514,10 @@ class AddImagesSection extends StatelessWidget {
   // ============================================
 
   Future<void> _handleAddImage(
-      BuildContext context,
-      OperatorOrderDetailController controller, {
-        bool? fromCamera,
-      }) async {
+    BuildContext context,
+    OperatorOrderDetailController controller, {
+    bool? fromCamera,
+  }) async {
     final imageService = ImagePickerService();
     File? imageFile;
 
@@ -479,11 +534,34 @@ class AddImagesSection extends StatelessWidget {
     }
   }
 
+  Future<void> _handleAddAttachment(
+    BuildContext context,
+    OperatorOrderDetailController controller,
+  ) async {
+    try {
+      final attachmentFile = await AttachmentPickerService().pickAttachment();
+
+      if (attachmentFile != null && context.mounted) {
+        _showAddDescriptionDialog(context, controller, attachmentFile);
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Không thể mở chọn tệp. Vui lòng cài lại app rồi thử lại. ($e)',
+          ),
+          backgroundColor: AppColors.statusError,
+        ),
+      );
+    }
+  }
+
   void _showAddDescriptionDialog(
-      BuildContext context,
-      OperatorOrderDetailController controller,
-      File imageFile,
-      ) {
+    BuildContext context,
+    OperatorOrderDetailController controller,
+    File imageFile,
+  ) {
     final descriptionController = TextEditingController();
 
     showDialog(
@@ -491,7 +569,7 @@ class AddImagesSection extends StatelessWidget {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
-          'Thêm ghi chú cho ảnh',
+          'Thêm ghi chú cho tệp đính kèm',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         content: SingleChildScrollView(
@@ -500,13 +578,19 @@ class AddImagesSection extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(
-                    imageFile,
-                    height: 150,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+                SizedBox(
+                  height: 150,
+                  width: double.infinity,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: _buildPendingAttachmentPreview(
+                      PendingImageModel(
+                        id: 'preview',
+                        imageFile: imageFile,
+                        description: '',
+                        createdAt: DateTime.now(),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -551,11 +635,13 @@ class AddImagesSection extends StatelessWidget {
   }
 
   void _showImagePreviewDialog(
-      BuildContext context,
-      OperatorOrderDetailController controller,
-      PendingImageModel image,
-      ) {
-    final descriptionController = TextEditingController(text: image.description);
+    BuildContext context,
+    OperatorOrderDetailController controller,
+    PendingImageModel image,
+  ) {
+    final descriptionController = TextEditingController(
+      text: image.description,
+    );
 
     showDialog(
       context: context,
@@ -567,11 +653,10 @@ class AddImagesSection extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.file(
-                  image.imageFile,
+                child: SizedBox(
                   height: 220,
                   width: double.infinity,
-                  fit: BoxFit.contain,
+                  child: _buildPendingAttachmentPreview(image),
                 ),
               ),
               const SizedBox(height: 16),
@@ -603,7 +688,10 @@ class AddImagesSection extends StatelessWidget {
                               Navigator.pop(context);
                               _confirmDeleteImage(context, controller, image);
                             },
-                            icon: const Icon(Icons.delete, color: AppColors.statusError),
+                            icon: const Icon(
+                              Icons.delete,
+                              color: AppColors.statusError,
+                            ),
                             label: const Text(
                               'Xóa',
                               style: TextStyle(color: AppColors.statusError),
@@ -623,7 +711,10 @@ class AddImagesSection extends StatelessWidget {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.maritimeBlue,
                             ),
-                            child: const Text('Thay đổi', style: TextStyle(color: Colors.white)),
+                            child: const Text(
+                              'Thay đổi',
+                              style: TextStyle(color: Colors.white),
+                            ),
                           ),
                         ),
                       ],
@@ -639,16 +730,16 @@ class AddImagesSection extends StatelessWidget {
   }
 
   void _confirmDeleteImage(
-      BuildContext context,
-      OperatorOrderDetailController controller,
-      PendingImageModel image,
-      ) {
+    BuildContext context,
+    OperatorOrderDetailController controller,
+    PendingImageModel image,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Xóa ảnh?'),
-        content: const Text('Bạn có chắc muốn xóa ảnh này?'),
+        title: const Text('Xóa tệp đính kèm?'),
+        content: const Text('Bạn có chắc muốn xóa tệp đính kèm này?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -670,9 +761,9 @@ class AddImagesSection extends StatelessWidget {
   }
 
   Future<void> _handleUploadImages(
-      BuildContext context,
-      OperatorOrderDetailController controller,
-      ) async {
+    BuildContext context,
+    OperatorOrderDetailController controller,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -693,10 +784,7 @@ class AddImagesSection extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             const Expanded(
-              child: Text(
-                'Xác nhận tải lên',
-                style: TextStyle(fontSize: 18),
-              ),
+              child: Text('Xác nhận tải lên', style: TextStyle(fontSize: 18)),
             ),
           ],
         ),
@@ -705,7 +793,7 @@ class AddImagesSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Bạn có chắc muốn tải lên ${controller.pendingImages.length} ảnh?',
+              'Bạn có chắc muốn tải lên ${controller.pendingImages.length} tệp đính kèm?',
               style: const TextStyle(fontSize: 15),
             ),
             const SizedBox(height: 16),
@@ -728,7 +816,7 @@ class AddImagesSection extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Các ảnh sẽ được tải lên lần lượt từng ảnh một',
+                      'Các tệp sẽ được tải lên lần lượt từng tệp một',
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.statusInTransit,
@@ -784,7 +872,7 @@ class AddImagesSection extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Đã tải lên ${controller.pendingImages.length} ảnh',
+                      'Đã tải lên ${controller.pendingImages.length} tệp đính kèm',
                       style: const TextStyle(fontSize: 13),
                     ),
                   ],
@@ -794,7 +882,9 @@ class AddImagesSection extends StatelessWidget {
           ),
           backgroundColor: AppColors.statusDelivered,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           duration: const Duration(seconds: 3),
           padding: const EdgeInsets.all(16),
         ),
@@ -818,7 +908,9 @@ class AddImagesSection extends StatelessWidget {
           ),
           backgroundColor: AppColors.statusError,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           duration: const Duration(seconds: 4),
         ),
       );

@@ -1,7 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:nalogistics_app/core/utils/attachment_utils.dart';
 import 'package:nalogistics_app/data/models/order/order_detail_api_model.dart';
 import 'package:nalogistics_app/data/models/order/order_image_model.dart';
+import 'package:nalogistics_app/data/services/media/attachment_picker_service.dart';
 import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
 import 'package:nalogistics_app/presentation/widgets/order/driver_add_images_section.dart';
 import 'package:provider/provider.dart';
@@ -457,8 +459,27 @@ class _OrderDetailPageState extends State<OrderDetailPage>
     int index,
     List<OrderImageModel> allImages,
   ) {
+    final isImage = AttachmentUtils.isImagePath(
+      image.fileName.isNotEmpty ? image.fileName : image.url,
+    );
+    final displayName = image.fileName.isNotEmpty
+        ? image.fileName
+        : AttachmentUtils.fileNameFromPath(image.url);
+    final imageAttachments = allImages
+        .where(
+          (item) => AttachmentUtils.isImagePath(
+            item.fileName.isNotEmpty ? item.fileName : item.url,
+          ),
+        )
+        .toList();
+    final imageIndex = imageAttachments.indexWhere(
+      (item) => item.imageID == image.imageID,
+    );
+
     return GestureDetector(
-      onTap: () => _openImageGallery(allImages, index),
+      onTap: isImage && imageIndex >= 0
+          ? () => _openImageGallery(imageAttachments, imageIndex)
+          : null,
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.sectionBackground,
@@ -470,13 +491,36 @@ class _OrderDetailPageState extends State<OrderDetailPage>
           child: Stack(
             fit: StackFit.expand,
             children: [
-              CachedNetworkImage(
-                imageUrl: image.url,
-                fit: BoxFit.cover,
-                placeholder: (context, url) =>
-                    const Center(child: CircularProgressIndicator()),
-                errorWidget: (context, url, error) =>
-                    const Icon(Icons.error, color: AppColors.statusError),
+              if (isImage)
+                CachedNetworkImage(
+                  imageUrl: image.url,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) =>
+                      const Center(child: CircularProgressIndicator()),
+                  errorWidget: (context, url, error) =>
+                      const Icon(Icons.error, color: AppColors.statusError),
+                )
+              else
+                _buildFileAttachmentPreview(displayName, image.url),
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Material(
+                  color: AppColors.maritimeBlue,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => _downloadAttachment(image),
+                    child: const Padding(
+                      padding: EdgeInsets.all(7),
+                      child: Icon(
+                        Icons.download,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ),
               ),
               Positioned(
                 bottom: 0,
@@ -495,7 +539,7 @@ class _OrderDetailPageState extends State<OrderDetailPage>
                     ),
                   ),
                   child: Text(
-                    image.descrip,
+                    displayName,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
@@ -513,13 +557,46 @@ class _OrderDetailPageState extends State<OrderDetailPage>
     );
   }
 
+  Widget _buildFileAttachmentPreview(String displayName, String url) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      padding: const EdgeInsets.all(12),
+      color: AppColors.sectionBackground,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            AttachmentUtils.iconForPath(
+              displayName.isNotEmpty ? displayName : url,
+            ),
+            color: AppColors.maritimeBlue,
+            size: 42,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            displayName,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildImagesCard(OrderDetailModel order) {
     // final images = order.activeImages;
     final images = order.orderImageList;
 
     return _buildInfoCard(
-      title: 'Hình ảnh đã tải lên', // ⭐ Changed title
-      icon: Icons.photo_library, // ⭐ Changed icon
+      title: 'Hình ảnh / file đã đính kèm',
+      icon: Icons.attach_file,
       color: AppColors.portGrey,
       children: [
         GridView.builder(
@@ -539,6 +616,39 @@ class _OrderDetailPageState extends State<OrderDetailPage>
         ),
       ],
     );
+  }
+
+  Future<void> _downloadAttachment(OrderImageModel attachment) async {
+    final fileName = attachment.fileName.isNotEmpty
+        ? attachment.fileName
+        : AttachmentUtils.fileNameFromPath(attachment.url);
+
+    try {
+      final savedPath = await AttachmentPickerService().downloadAttachment(
+        url: attachment.url,
+        fileName: fileName,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            savedPath == null
+                ? 'Đang tải "$fileName" về thư mục Downloads'
+                : 'Đã tải "$fileName" về: $savedPath',
+          ),
+          backgroundColor: AppColors.statusDelivered,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Không thể tải tệp: $e'),
+          backgroundColor: AppColors.statusError,
+        ),
+      );
+    }
   }
 
   Widget _buildOrderHeader(dynamic order) {
@@ -705,161 +815,128 @@ class _OrderDetailPageState extends State<OrderDetailPage>
             ],
           ),
           const SizedBox(height: 20),
-
-          // From location
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.sectionBackground,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.statusInTransit.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: AppColors.statusInTransit,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.upload_rounded,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'ĐIỂM LẤY',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.statusInTransit,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Cảng nhận Container",
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  order.fromLocationName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primaryText,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Kho nhận/giao hàng",
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  order.fromWhereName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primaryText,
-                  ),
-                ),
-              ],
-            ),
+          _buildTransportStopCard(
+            title: 'CẢNG NHẬN CONTAINER',
+            location: order.fromLocationName,
+            address: 'HoChiMinh1111',
+            phone: '1234213',
           ),
-
-          // Arrow
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.arrow_downward,
-                  color: AppColors.maritimeBlue,
-                  size: 24,
-                ),
-              ],
-            ),
+          _buildTransportArrow(),
+          _buildTransportStopCard(
+            title: 'KHO NHẬN/GIAO HÀNG',
+            location: order.fromWhereName,
+            address: 'HoChiMinh1911',
+            phone: '1234213',
           ),
-
-          // To location
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.sectionBackground,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.statusDelivered.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: AppColors.statusDelivered,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.download_rounded,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'ĐIỂM TRẢ',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.statusDelivered,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Cảng hạ/trả Container",
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  order.toLocationName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primaryText,
-                  ),
-                ),
-              ],
-            ),
+          _buildTransportArrow(),
+          _buildTransportStopCard(
+            title: 'CẢNG HẠ/TRẢ CONTAINER',
+            location: order.toLocationName,
+            address: 'HoChiMinh1911',
+            phone: '1234213',
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTransportStopCard({
+    required String title,
+    required String location,
+    required String address,
+    required String phone,
+  }) {
+    final displayLocation = location.trim().isEmpty
+        ? 'Chưa có thông tin'
+        : location.trim();
+
+    return Material(
+      color: AppColors.cardBackground,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(minHeight: 96),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.hintText.withOpacity(0.24)),
+        ),
+        child: Stack(
+          children: [
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SizedBox(
+                height: 3,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: AppColors.maritimeBlue),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
+              child: DefaultTextStyle(
+                style: const TextStyle(color: AppColors.primaryText),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.maritimeBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      displayLocation,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildTransportMetaRow(Icons.location_on, address),
+                    const SizedBox(height: 6),
+                    _buildTransportMetaRow(Icons.phone, phone),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransportMetaRow(IconData icon, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: AppColors.statusError),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.secondaryText,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTransportArrow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Center(
+        child: Icon(Icons.arrow_downward, color: AppColors.secondaryText),
       ),
     );
   }

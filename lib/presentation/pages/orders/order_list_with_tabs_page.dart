@@ -5,6 +5,7 @@ import 'package:nalogistics_app/presentation/widgets/dialogs/date_filter_dialog.
 import 'package:nalogistics_app/presentation/widgets/common/pagination_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
+import 'package:nalogistics_app/presentation/controllers/driver_location_tracking_controller.dart';
 import 'package:nalogistics_app/presentation/controllers/order_controller.dart';
 import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
 import 'package:nalogistics_app/shared/enums/order_status_enum.dart';
@@ -52,18 +53,23 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
   }
 
   Future<void> _loadAllTabsData() async {
-    print('📱 Loading all tabs for role: ${_authController.userRole.displayName}');
+    print(
+      '📱 Loading all tabs for role: ${_authController.userRole.displayName}',
+    );
     await _orderController.loadInitialData();
+    await _syncLocationTracking();
   }
 
-  void _handleSearch(String query) {
-    _orderController.searchOrders(query);
+  Future<void> _handleSearch(String query) async {
+    await _orderController.searchOrders(query);
+    await _syncLocationTracking();
   }
 
-  void _clearSearch() {
+  Future<void> _clearSearch() async {
     _searchController.clear();
     _orderController.clearSearch();
-    _orderController.refreshAllTabs();
+    await _orderController.refreshAllTabs();
+    await _syncLocationTracking();
     setState(() {
       _isSearchBarVisible = false;
     });
@@ -91,17 +97,29 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
       final fromDate = result['fromDate'];
       final toDate = result['toDate'];
       await _orderController.applyDateFilter(fromDate, toDate);
+      await _syncLocationTracking();
     }
   }
 
-  void _clearAllFilters() {
+  Future<void> _clearAllFilters() async {
     _searchController.clear();
     _orderController.clearSearch();
     _orderController.clearDateFilter();
     setState(() {
       _isSearchBarVisible = false;
     });
-    _orderController.refreshAllTabs();
+    await _orderController.refreshAllTabs();
+    await _syncLocationTracking();
+  }
+
+  Future<void> _syncLocationTracking() async {
+    if (!mounted) return;
+    if (_orderController.isSearching || _orderController.hasDateFilter) return;
+
+    await context.read<DriverLocationTrackingController>().syncWithOrders(
+      isDriver: _authController.isDriver,
+      ordersByStatus: _orderController.ordersByStatus,
+    );
   }
 
   @override
@@ -117,37 +135,37 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
             title: _isSearchBarVisible
                 ? _buildSearchField()
                 : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Danh sách đơn hàng',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Danh sách đơn hàng',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Color(userRole.colorValue).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          userRole.displayName,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 3),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Color(userRole.colorValue).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    userRole.displayName,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
             backgroundColor: AppColors.maritimeBlue,
             elevation: 0,
             actions: [
@@ -189,17 +207,20 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                   return IconButton(
                     icon: controller.isLoading
                         ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
                         : const Icon(Icons.refresh),
                     onPressed: controller.isLoading
                         ? null
-                        : () => controller.refreshAllTabs(),
+                        : () async {
+                            await controller.refreshAllTabs();
+                            await _syncLocationTracking();
+                          },
                     tooltip: 'Làm mới tất cả',
                   );
                 },
@@ -282,7 +303,8 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
             children: [
               Consumer<OrderController>(
                 builder: (context, controller, child) {
-                  final hasFilters = controller.isSearching || controller.hasDateFilter;
+                  final hasFilters =
+                      controller.isSearching || controller.hasDateFilter;
 
                   if (!hasFilters) return const SizedBox.shrink();
 
@@ -313,11 +335,10 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                             ),
                             const Spacer(),
                             TextButton.icon(
-                              onPressed: _clearAllFilters,
-                              icon: const Icon(
-                                Icons.clear_all,
-                                size: 16,
-                              ),
+                              onPressed: () {
+                                _clearAllFilters();
+                              },
+                              icon: const Icon(Icons.clear_all, size: 16),
                               label: const Text('Xóa tất cả'),
                               style: TextButton.styleFrom(
                                 foregroundColor: AppColors.statusError,
@@ -339,19 +360,21 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                               _buildFilterChip(
                                 icon: Icons.search,
                                 label: 'Tìm kiếm: "${controller.searchQuery}"',
-                                onRemove: () {
+                                onRemove: () async {
                                   _searchController.clear();
                                   controller.clearSearch();
-                                  controller.refreshAllTabs();
+                                  await controller.refreshAllTabs();
+                                  await _syncLocationTracking();
                                 },
                               ),
                             if (controller.hasDateFilter)
                               _buildFilterChip(
                                 icon: Icons.calendar_month,
                                 label: _getDateFilterLabel(controller),
-                                onRemove: () {
+                                onRemove: () async {
                                   controller.clearDateFilter();
-                                  controller.refreshAllTabs();
+                                  await controller.refreshAllTabs();
+                                  await _syncLocationTracking();
                                 },
                               ),
                           ],
@@ -387,13 +410,15 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
         border: InputBorder.none,
         suffixIcon: _searchController.text.isNotEmpty
             ? IconButton(
-          icon: const Icon(Icons.clear, color: AppColors.maritimeDarkBlue),
-          onPressed: () {
-            _searchController.clear();
-            _orderController.refreshAllTabs();
-            _handleSearch('');
-          },
-        )
+                icon: const Icon(
+                  Icons.clear,
+                  color: AppColors.maritimeDarkBlue,
+                ),
+                onPressed: () {
+                  _searchController.clear();
+                  _handleSearch('');
+                },
+              )
             : null,
       ),
       onChanged: (value) {
@@ -403,32 +428,28 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
           }
         });
       },
-      onSubmitted: _handleSearch,
+      onSubmitted: (value) {
+        _handleSearch(value);
+      },
     );
   }
 
   Widget _buildFilterChip({
     required IconData icon,
     required String label,
-    required VoidCallback onRemove,
+    required Future<void> Function() onRemove,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.maritimeBlue.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.maritimeBlue.withOpacity(0.3),
-        ),
+        border: Border.all(color: AppColors.maritimeBlue.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 14,
-            color: AppColors.maritimeBlue,
-          ),
+          Icon(icon, size: 14, color: AppColors.maritimeBlue),
           const SizedBox(width: 6),
           Flexible(
             child: Text(
@@ -444,7 +465,9 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
           ),
           const SizedBox(width: 4),
           InkWell(
-            onTap: onRemove,
+            onTap: () {
+              onRemove();
+            },
             borderRadius: BorderRadius.circular(12),
             child: Container(
               padding: const EdgeInsets.all(2),
@@ -497,9 +520,7 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const CircularProgressIndicator(
-                  color: AppColors.maritimeBlue,
-                ),
+                const CircularProgressIndicator(color: AppColors.maritimeBlue),
                 const SizedBox(height: 16),
                 Text(
                   'Đang tải ${status.displayName.toLowerCase()}...',
@@ -537,9 +558,7 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                   const SizedBox(height: 8),
                   Text(
                     error ?? 'Không thể tải danh sách đơn hàng',
-                    style: const TextStyle(
-                      color: AppColors.secondaryText,
-                    ),
+                    style: const TextStyle(color: AppColors.secondaryText),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -616,7 +635,9 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                       return OperatorOrderCard(
                         order: order,
                         onTap: () {
-                          context.push('/operator-order-detail/${order.orderID}');
+                          context.push(
+                            '/operator-order-detail/${order.orderID}',
+                          );
                         },
                       );
                     } else {

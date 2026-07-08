@@ -1,4 +1,5 @@
 import 'package:nalogistics_app/presentation/controllers/operator_order_detail_controller.dart';
+import 'package:nalogistics_app/presentation/controllers/driver_location_tracking_controller.dart';
 import 'package:nalogistics_app/presentation/controllers/profile_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
@@ -7,12 +8,8 @@ import 'package:nalogistics_app/presentation/controllers/order_detail_controller
 
 class DependencyInjection {
   static List<ChangeNotifierProvider> providers = [
-    ChangeNotifierProvider<AuthController>(
-      create: (_) => AuthController(),
-    ),
-    ChangeNotifierProvider<OrderController>(
-      create: (_) => OrderController(),
-    ),
+    ChangeNotifierProvider<AuthController>(create: (_) => AuthController()),
+    ChangeNotifierProvider<OrderController>(create: (_) => OrderController()),
     ChangeNotifierProvider<OrderDetailController>(
       create: (_) => OrderDetailController(),
     ),
@@ -21,6 +18,9 @@ class DependencyInjection {
     ),
     ChangeNotifierProvider<ProfileController>(
       create: (_) => ProfileController(),
+    ),
+    ChangeNotifierProvider<DriverLocationTrackingController>(
+      create: (_) => DriverLocationTrackingController(),
     ),
     // Các providers khác có thể thêm vào đây ...
   ];

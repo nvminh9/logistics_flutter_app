@@ -7,6 +7,7 @@ import 'package:nalogistics_app/presentation/routes/route_names.dart';
 import 'package:nalogistics_app/presentation/widgets/common/custom_button.dart';
 import 'package:nalogistics_app/presentation/widgets/common/app_bar_widget.dart';
 import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
+import 'package:nalogistics_app/presentation/controllers/driver_location_tracking_controller.dart';
 import 'package:nalogistics_app/presentation/controllers/profile_controller.dart';
 import 'package:nalogistics_app/shared/enums/user_role_enum.dart';
 import 'package:nalogistics_app/presentation/widgets/common/avatar_widget.dart';
@@ -18,7 +19,8 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStateMixin {
+class _ProfilePageState extends State<ProfilePage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -36,21 +38,20 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 1.0, curve: Curves.easeOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.2, 1.0, curve: Curves.easeOut),
+      ),
+    );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
   }
 
   @override
@@ -90,6 +91,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
         context,
         listen: false,
       );
+      context.read<DriverLocationTrackingController>().stopTracking();
       await authController.logout();
 
       if (!mounted) return;
@@ -146,9 +148,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primaryBackground,
-      appBar: const AppBarWidget(
-        title: AppStrings.profile,
-      ),
+      appBar: const AppBarWidget(title: AppStrings.profile),
       body: Consumer<ProfileController>(
         builder: (context, profileController, child) {
           // Loading state
@@ -197,6 +197,20 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                       _buildProfileHeader(profileController),
                       const SizedBox(height: 16),
                       _buildRoleBadge(profileController),
+                      Consumer<AuthController>(
+                        builder: (context, authController, child) {
+                          if (!authController.isDriver) {
+                            return const SizedBox.shrink();
+                          }
+
+                          return Column(
+                            children: [
+                              const SizedBox(height: 16),
+                              _buildTrackingStatusCard(),
+                            ],
+                          );
+                        },
+                      ),
                       const SizedBox(height: 16),
                       _buildStatsCards(profileController),
                       const SizedBox(height: 16),
@@ -221,11 +235,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppColors.statusError,
-            ),
+            Icon(Icons.error_outline, size: 64, color: AppColors.statusError),
             const SizedBox(height: 16),
             const Text(
               'Không thể tải thông tin',
@@ -238,9 +248,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
             const SizedBox(height: 8),
             Text(
               controller.errorMessage ?? 'Có lỗi xảy ra',
-              style: const TextStyle(
-                color: AppColors.secondaryText,
-              ),
+              style: const TextStyle(color: AppColors.secondaryText),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -300,9 +308,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
             const SizedBox(height: 8),
             const Text(
               'Không tìm thấy thông tin người dùng',
-              style: TextStyle(
-                color: AppColors.secondaryText,
-              ),
+              style: TextStyle(color: AppColors.secondaryText),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -394,10 +400,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                   ),
                 ),
                 child: Center(
-                  child: Text(
-                    role.icon,
-                    style: const TextStyle(fontSize: 32),
-                  ),
+                  child: Text(role.icon, style: const TextStyle(fontSize: 32)),
                 ),
               ),
               const SizedBox(width: 16),
@@ -478,6 +481,83 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     );
   }
 
+  Widget _buildTrackingStatusCard() {
+    return Consumer<DriverLocationTrackingController>(
+      builder: (context, trackingController, child) {
+        final isTracking = trackingController.isTracking;
+        final color = isTracking
+            ? AppColors.statusDelivered
+            : trackingController.permissionDenied
+            ? AppColors.statusError
+            : AppColors.secondaryText;
+        final icon = isTracking
+            ? Icons.gps_fixed_rounded
+            : trackingController.permissionDenied
+            ? Icons.location_disabled_rounded
+            : Icons.gps_off_rounded;
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: Colors.black26, width: 1),
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [AppColors.cardShadow],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withOpacity(0.3), width: 2),
+                ),
+                child: Icon(icon, color: color, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Hành trình giao hàng',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondaryText,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      trackingController.statusText,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                    if (trackingController.lastSentAt != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Cập nhật lúc ${_formatTrackingTime(trackingController.lastSentAt!)}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildStatCard({
     required IconData icon,
     required String title,
@@ -514,10 +594,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
           ),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.secondaryText,
-            ),
+            style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
             textAlign: TextAlign.center,
           ),
         ],
@@ -567,10 +644,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
       return [
         const Text(
           'Không có thông tin tài xế',
-          style: TextStyle(
-            fontSize: 14,
-            color: AppColors.secondaryText,
-          ),
+          style: TextStyle(fontSize: 14, color: AppColors.secondaryText),
         ),
       ];
     }
@@ -620,20 +694,20 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
             : AppColors.statusDelayed,
         trailing: controller.isLicenseExpired
             ? Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.statusError.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: const Text(
-            'HẾT HẠN',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: AppColors.statusError,
-            ),
-          ),
-        )
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.statusError.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'HẾT HẠN',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.statusError,
+                  ),
+                ),
+              )
             : null,
       ),
       if (controller.getDaysUntilExpire() != null &&
@@ -643,12 +717,12 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: _getExpirationWarningColor(
-                controller.getDaysUntilExpire()!
+              controller.getDaysUntilExpire()!,
             ).withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: _getExpirationWarningColor(
-                  controller.getDaysUntilExpire()!
+                controller.getDaysUntilExpire()!,
               ).withOpacity(0.3),
             ),
           ),
@@ -658,7 +732,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                 Icons.schedule,
                 size: 16,
                 color: _getExpirationWarningColor(
-                    controller.getDaysUntilExpire()!
+                  controller.getDaysUntilExpire()!,
                 ),
               ),
               const SizedBox(width: 8),
@@ -668,7 +742,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                   style: TextStyle(
                     fontSize: 12,
                     color: _getExpirationWarningColor(
-                        controller.getDaysUntilExpire()!
+                      controller.getDaysUntilExpire()!,
                     ),
                     fontWeight: FontWeight.w500,
                   ),
@@ -754,10 +828,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
             ],
           ),
         ),
-        if (trailing != null) ...[
-          const SizedBox(width: 8),
-          trailing,
-        ],
+        if (trailing != null) ...[const SizedBox(width: 8), trailing],
       ],
     );
   }
@@ -780,6 +851,12 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     } else {
       return 'GPLX còn hiệu lực $daysUntilExpire ngày';
     }
+  }
+
+  String _formatTrackingTime(DateTime dateTime) {
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 
   Widget _buildLogoutButton() {

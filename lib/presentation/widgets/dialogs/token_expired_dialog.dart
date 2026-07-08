@@ -4,23 +4,19 @@ import 'package:nalogistics_app/core/constants/colors.dart';
 import 'package:nalogistics_app/presentation/routes/route_names.dart';
 import 'package:provider/provider.dart';
 import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
+import 'package:nalogistics_app/presentation/controllers/driver_location_tracking_controller.dart';
 
 class TokenExpiredDialog extends StatelessWidget {
   final String? message;
 
-  const TokenExpiredDialog({
-    Key? key,
-    this.message,
-  }) : super(key: key);
+  const TokenExpiredDialog({Key? key, this.message}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async => false, // Không cho back
       child: AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Column(
           children: [
             // Animated icon
@@ -84,9 +80,7 @@ class TokenExpiredDialog extends StatelessWidget {
                   ],
                 ),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.blue.withOpacity(0.2),
-                ),
+                border: Border.all(color: Colors.blue.withOpacity(0.2)),
               ),
               child: Row(
                 children: [
@@ -157,6 +151,7 @@ class TokenExpiredDialog extends StatelessWidget {
         context,
         listen: false,
       );
+      context.read<DriverLocationTrackingController>().stopTracking();
       await authController.logout();
 
       // Navigate to login page
@@ -177,15 +172,10 @@ class TokenExpiredDialog extends StatelessWidget {
 }
 
 // Utility function để show dialog
-Future<void> showTokenExpiredDialog(
-    BuildContext context, {
-      String? message,
-    }) {
+Future<void> showTokenExpiredDialog(BuildContext context, {String? message}) {
   return showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (context) => TokenExpiredDialog(
-      message: message,
-    ),
+    builder: (context) => TokenExpiredDialog(message: message),
   );
 }

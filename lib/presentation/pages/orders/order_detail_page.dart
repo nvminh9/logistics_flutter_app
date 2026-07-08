@@ -5,6 +5,7 @@ import 'package:nalogistics_app/data/models/order/order_detail_api_model.dart';
 import 'package:nalogistics_app/data/models/order/order_image_model.dart';
 import 'package:nalogistics_app/data/services/media/attachment_picker_service.dart';
 import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
+import 'package:nalogistics_app/presentation/controllers/driver_location_tracking_controller.dart';
 import 'package:nalogistics_app/presentation/widgets/order/driver_add_images_section.dart';
 import 'package:provider/provider.dart';
 import 'package:nalogistics_app/core/constants/strings.dart';
@@ -234,7 +235,24 @@ class _OrderDetailPageState extends State<OrderDetailPage>
           context,
           listen: false,
         );
-        orderController.loadInitialData();
+        await orderController.refreshAllTabs();
+
+        final authController = context.read<AuthController>();
+        final trackingController = context
+            .read<DriverLocationTrackingController>();
+        if (authController.isDriver) {
+          if (newStatus == OrderStatus.pickedUp ||
+              newStatus == OrderStatus.inTransit) {
+            await trackingController.startTracking(
+              orderId: controller.orderDetail!.orderID.toString(),
+            );
+          } else if (newStatus == OrderStatus.delivered ||
+              newStatus == OrderStatus.completed ||
+              newStatus == OrderStatus.cancelled ||
+              newStatus == OrderStatus.failedDelivery) {
+            trackingController.stopTracking();
+          }
+        }
       } else {
         // Show error message
         ScaffoldMessenger.of(context).showSnackBar(

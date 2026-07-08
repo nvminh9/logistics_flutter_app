@@ -19,6 +19,7 @@ class ApiConstants {
   static const String driverOrderDetail = '$apiVersion/DriverRole/detailOrderForDriver';
   static const String driverUpdateStatus = '$apiVersion/DriverRole/updateStatusOrderForDriver';
   static const String driverSeenAt = '$apiVersion/DriverRole/DriverSeenAt';
+  static const String trackingLocation = '$apiVersion/Tracking/location';
 
   // ==========================================
   // OPERATOR ROLE ENDPOINTS

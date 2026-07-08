@@ -47,6 +47,9 @@ dependencies:
   # Networking
   connectivity_plus: ^5.0.1
 
+  # Location tracking
+  geolocator: ^14.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

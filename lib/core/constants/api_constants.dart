@@ -15,9 +15,12 @@ class ApiConstants {
   // ==========================================
   // DRIVER ROLE ENDPOINTS
   // ==========================================
-  static const String driverOrders = '$apiVersion/DriverRole/listOrderForDriver';
-  static const String driverOrderDetail = '$apiVersion/DriverRole/detailOrderForDriver';
-  static const String driverUpdateStatus = '$apiVersion/DriverRole/updateStatusOrderForDriver';
+  static const String driverOrders =
+      '$apiVersion/DriverRole/listOrderForDriver';
+  static const String driverOrderDetail =
+      '$apiVersion/DriverRole/detailOrderForDriver';
+  static const String driverUpdateStatus =
+      '$apiVersion/DriverRole/updateStatusOrderForDriver';
   static const String driverSeenAt = '$apiVersion/DriverRole/DriverSeenAt';
   static const String trackingLocation = '$apiVersion/Tracking/location';
 
@@ -26,9 +29,12 @@ class ApiConstants {
   // ==========================================
   static const String operatorOrders = '$apiVersion/Order/listOrder';
   static const String operatorOrderDetail = '$apiVersion/Order/detailOrder';
-  static const String operatorUpdateStatus = '$apiVersion/Order/updateStatusOrder';
-  static const String operatorConfirmOrder = '$apiVersion/Order/updateStatusOrderForOperator';
+  static const String operatorUpdateStatus =
+      '$apiVersion/Order/updateStatusOrder';
+  static const String operatorConfirmOrder =
+      '$apiVersion/Order/updateStatusOrderForOperator';
   static const String updateOrder = '$apiVersion/Order/updateOrder';
+  static const String dispatchOrderPdf = '$apiVersion/Order';
 
   // ==========================================
   // DRIVER MANAGEMENT ENDPOINTS
@@ -62,7 +68,8 @@ class ApiConstants {
   // ==========================================
 
   /// New image upload endpoint
-  static const String uploadOrderImage = '$apiVersion/Image/createImageAndUpload';
+  static const String uploadOrderImage =
+      '$apiVersion/Image/createImageAndUpload';
 
   // ==========================================
   // DEFAULT QUERY PARAMETERS
@@ -70,16 +77,16 @@ class ApiConstants {
 
   /// Driver default params - ⭐ UPDATED
   static const Map<String, String> defaultDriverOrderParams = {
-    'order': 'desc',           // ⭐ Changed: desc (newest first)
-    'sortBy': 'orderDate',     // ⭐ Changed: orderDate
+    'order': 'desc', // ⭐ Changed: desc (newest first)
+    'sortBy': 'orderDate', // ⭐ Changed: orderDate
     'pageSize': '13',
     'pageNumber': '1',
   };
 
   /// Operator default params - ⭐ UPDATED
   static const Map<String, String> defaultOperatorOrderParams = {
-    'order': 'desc',           // ⭐ Changed: desc (newest first)
-    'sortBy': 'orderDate',     // ⭐ Changed: orderDate
+    'order': 'desc', // ⭐ Changed: desc (newest first)
+    'sortBy': 'orderDate', // ⭐ Changed: orderDate
     'pageSize': '30',
     'pageNumber': '1',
   };
@@ -144,6 +151,11 @@ class ApiConstants {
   /// Build URL for update order
   static String getUpdateOrderUrl(String orderId) {
     return '$updateOrder?id=$orderId';
+  }
+
+  /// Build URL cho file PDF lệnh điều động
+  static String getDispatchOrderPdfUrl(String orderId) {
+    return '$dispatchOrderPdf/$orderId/dispatch-order/pdf';
   }
 
   /// Build URL cho driver list with search

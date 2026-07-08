@@ -7,6 +7,7 @@ import 'package:nalogistics_app/data/models/order/pending_image_model.dart';
 import 'package:nalogistics_app/data/models/rmooc/rmooc_list_model.dart';
 import 'package:nalogistics_app/data/models/truck/truck_list_model.dart';
 import 'package:nalogistics_app/data/repositories/implementations/order_repository.dart';
+import 'package:nalogistics_app/data/services/media/attachment_picker_service.dart';
 import 'package:nalogistics_app/domain/usecases/order/get_operator_order_detail_usecase.dart';
 import 'package:nalogistics_app/domain/usecases/order/confirm_pending_order_usecase.dart';
 import 'package:nalogistics_app/domain/usecases/order/update_order_status_usecase.dart';
@@ -21,12 +22,14 @@ class OperatorOrderDetailController extends BaseController {
   OperatorOrderDetailModel? _orderDetail;
   bool _isConfirming = false;
   bool _isUpdatingStatus = false;
+  bool _isDownloadingDispatchPdf = false;
   String? _currentOrderID; // Track current order ID
 
   // Getters
   OperatorOrderDetailModel? get orderDetail => _orderDetail;
   bool get isConfirming => _isConfirming;
   bool get isUpdatingStatus => _isUpdatingStatus;
+  bool get isDownloadingDispatchPdf => _isDownloadingDispatchPdf;
 
   OperatorOrderDetailController() {
     _orderRepository = OrderRepository();
@@ -184,6 +187,38 @@ class OperatorOrderDetailController extends BaseController {
   }
 
   /// Reload order detail với retry logic
+  Future<String?> downloadDispatchOrderPdf() async {
+    final orderID = _currentOrderID;
+    if (orderID == null || orderID.isEmpty) {
+      setError('Không có thông tin đơn hàng');
+      return null;
+    }
+
+    try {
+      _isDownloadingDispatchPdf = true;
+      clearError();
+      notifyListeners();
+
+      final bytes = await _orderRepository.downloadDispatchOrderPdf(
+        orderID: orderID,
+      );
+      final savedPath = await AttachmentPickerService().saveBytesToFile(
+        bytes: bytes,
+        fileName: 'lenh-dieu-dong-$orderID.pdf',
+      );
+
+      _isDownloadingDispatchPdf = false;
+      notifyListeners();
+      return savedPath;
+    } catch (e) {
+      print('❌ Download Dispatch Order PDF Error: $e');
+      setError('Không thể tải lệnh điều động: ${e.toString()}');
+      _isDownloadingDispatchPdf = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<void> reloadOrderDetail() async {
     if (_currentOrderID == null) {
       print('⚠️ No order ID to reload');

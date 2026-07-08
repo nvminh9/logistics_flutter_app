@@ -626,7 +626,7 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
                 onRefresh: () => orderController.refreshOrders(status),
                 color: AppColors.maritimeBlue,
                 child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                   itemCount: orders.length,
                   itemBuilder: (context, index) {
                     final order = orders[index];

@@ -1,6 +1,7 @@
 // lib/data/repositories/interfaces/i_order_repository.dart
 
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:nalogistics_app/data/models/driver/driver_list_model.dart';
 import 'package:nalogistics_app/data/models/order/assign_driver_response_model.dart';
 import 'package:nalogistics_app/data/models/order/assign_rmooc_response_model.dart';
@@ -22,26 +23,22 @@ abstract class IOrderRepository {
 
   /// ⭐ UPDATED: Default order='desc', sortBy='orderDate'
   Future<OrderListResponse> getOrdersForDriver({
-    String order = 'desc',        // ⭐ Changed default
-    String sortBy = 'orderDate',  // ⭐ Changed default
+    String order = 'desc', // ⭐ Changed default
+    String sortBy = 'orderDate', // ⭐ Changed default
     int pageSize = 13,
     int pageNumber = 1,
     String? searchKey,
     int? status,
   });
 
-  Future<OrderDetailResponse> getOrderDetail({
-    required String orderID,
-  });
+  Future<OrderDetailResponse> getOrderDetail({required String orderID});
 
   Future<UpdateStatusResponse> updateOrderStatus({
     required String orderID,
     required int statusValue,
   });
 
-  Future<void> updateDriverSeenAt({
-    required String orderID,
-  });
+  Future<void> updateDriverSeenAt({required String orderID});
 
   // ========================================
   // OPERATOR ROLE METHODS
@@ -49,8 +46,8 @@ abstract class IOrderRepository {
 
   /// ⭐ UPDATED: Default order='desc', sortBy='orderDate'
   Future<OperatorOrderListResponse> getOrdersForOperator({
-    String order = 'desc',        // ⭐ Changed default
-    String sortBy = 'orderDate',  // ⭐ Changed default
+    String order = 'desc', // ⭐ Changed default
+    String sortBy = 'orderDate', // ⭐ Changed default
     int pageSize = 30,
     int pageNumber = 1,
     String? fromDate,
@@ -68,9 +65,9 @@ abstract class IOrderRepository {
     required int statusValue,
   });
 
-  Future<ConfirmOrderResponse> confirmPendingOrder({
-    required String orderID,
-  });
+  Future<ConfirmOrderResponse> confirmPendingOrder({required String orderID});
+
+  Future<Uint8List> downloadDispatchOrderPdf({required String orderID});
 
   // ========================================
   // DRIVER MANAGEMENT METHODS

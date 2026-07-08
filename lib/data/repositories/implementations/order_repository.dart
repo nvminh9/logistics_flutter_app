@@ -16,7 +16,7 @@ import 'package:nalogistics_app/data/repositories/interfaces/i_order_repository.
 import 'package:nalogistics_app/data/services/api/api_client.dart';
 import 'package:nalogistics_app/core/constants/api_constants.dart';
 import 'dart:io';
-import 'package:dio/dio.dart';
+import 'dart:typed_data';
 import 'package:path/path.dart' as path;
 
 class OrderRepository implements IOrderRepository {
@@ -29,8 +29,8 @@ class OrderRepository implements IOrderRepository {
   /// ⭐ UPDATED: Default parameters
   @override
   Future<OrderListResponse> getOrdersForDriver({
-    String order = 'desc',        // ⭐ Changed
-    String sortBy = 'orderDate',  // ⭐ Changed
+    String order = 'desc', // ⭐ Changed
+    String sortBy = 'orderDate', // ⭐ Changed
     int pageSize = 13,
     int pageNumber = 1,
     String? searchKey,
@@ -56,7 +56,7 @@ class OrderRepository implements IOrderRepository {
 
       print(
         '📤 Driver fetching orders => '
-            '/api/DriverRole/listOrderForDriver?$queryParams',
+        '/api/DriverRole/listOrderForDriver?$queryParams',
       );
       print('🔍 searchKey = $searchKey');
       print('🔍 status = $status');
@@ -75,13 +75,9 @@ class OrderRepository implements IOrderRepository {
   }
 
   @override
-  Future<OrderDetailResponse> getOrderDetail({
-    required String orderID,
-  }) async {
+  Future<OrderDetailResponse> getOrderDetail({required String orderID}) async {
     try {
-      final queryParams = {
-        'orderID': orderID,
-      };
+      final queryParams = {'orderID': orderID};
 
       final response = await _apiClient.get(
         ApiConstants.driverOrderDetail,
@@ -107,7 +103,9 @@ class OrderRepository implements IOrderRepository {
         'statusString': statusValue.toString(),
       };
 
-      print('📤 Updating Driver order status: orderID=$orderID, status=$statusValue');
+      print(
+        '📤 Updating Driver order status: orderID=$orderID, status=$statusValue',
+      );
 
       final response = await _apiClient.put(
         ApiConstants.driverUpdateStatus,
@@ -124,13 +122,9 @@ class OrderRepository implements IOrderRepository {
 
   // Xem đơn hàng (Driver Role)
   @override
-  Future<void> updateDriverSeenAt({
-    required String orderID,
-  }) async {
+  Future<void> updateDriverSeenAt({required String orderID}) async {
     try {
-      final queryParams = {
-        'OrderID': orderID,
-      };
+      final queryParams = {'OrderID': orderID};
 
       print('👁️ Updating DriverSeenAt: orderID=$orderID');
 
@@ -154,8 +148,8 @@ class OrderRepository implements IOrderRepository {
   /// ⭐ UPDATED: Default parameters
   @override
   Future<OperatorOrderListResponse> getOrdersForOperator({
-    String order = 'desc',        // ⭐ Changed
-    String sortBy = 'orderDate',  // ⭐ Changed
+    String order = 'desc', // ⭐ Changed
+    String sortBy = 'orderDate', // ⭐ Changed
     int pageSize = 30,
     int pageNumber = 1,
     String? fromDate,
@@ -206,9 +200,7 @@ class OrderRepository implements IOrderRepository {
     required String orderID,
   }) async {
     try {
-      final queryParams = {
-        'id': orderID,
-      };
+      final queryParams = {'id': orderID};
 
       print('📤 Operator fetching order detail: id=$orderID');
 
@@ -238,7 +230,9 @@ class OrderRepository implements IOrderRepository {
         'statusString': statusValue.toString(),
       };
 
-      print('📤 Updating Operator order status: orderID=$orderID, status=$statusValue');
+      print(
+        '📤 Updating Operator order status: orderID=$orderID, status=$statusValue',
+      );
 
       final response = await _apiClient.put(
         ApiConstants.operatorUpdateStatus,
@@ -258,9 +252,7 @@ class OrderRepository implements IOrderRepository {
     required String orderID,
   }) async {
     try {
-      final queryParams = {
-        'orderID': orderID,
-      };
+      final queryParams = {'orderID': orderID};
 
       print('📤 Operator confirming pending order: orderID=$orderID');
 
@@ -270,11 +262,32 @@ class OrderRepository implements IOrderRepository {
         requiresAuth: true,
       );
 
-      print('📥 Confirm order response: ${response['statusCode']} - ${response['message']}');
+      print(
+        '📥 Confirm order response: ${response['statusCode']} - ${response['message']}',
+      );
 
       return ConfirmOrderResponse.fromJson(response);
     } catch (e) {
       print('❌ Confirm Pending Order Error: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Uint8List> downloadDispatchOrderPdf({required String orderID}) async {
+    try {
+      print('📤 Downloading dispatch order PDF: orderID=$orderID');
+
+      final response = await _apiClient.getBytes(
+        ApiConstants.getDispatchOrderPdfUrl(orderID),
+        requiresAuth: true,
+        accept: 'application/pdf',
+      );
+
+      print('📥 Dispatch order PDF downloaded: ${response.length} bytes');
+      return response;
+    } catch (e) {
+      print('❌ Download Dispatch Order PDF Error: $e');
       rethrow;
     }
   }
@@ -320,10 +333,7 @@ class OrderRepository implements IOrderRepository {
     required int driverID,
   }) async {
     try {
-      final queryParams = {
-        'orderID': orderID,
-        'driverID': driverID.toString(),
-      };
+      final queryParams = {'orderID': orderID, 'driverID': driverID.toString()};
 
       print('📤 Assigning driver $driverID to order $orderID');
 
@@ -384,10 +394,7 @@ class OrderRepository implements IOrderRepository {
     required int truckID,
   }) async {
     try {
-      final queryParams = {
-        'orderID': orderID,
-        'truckID': truckID.toString(),
-      };
+      final queryParams = {'orderID': orderID, 'truckID': truckID.toString()};
 
       print('📤 Assigning truck $truckID to order $orderID');
 
@@ -448,10 +455,7 @@ class OrderRepository implements IOrderRepository {
     required int rmoocID,
   }) async {
     try {
-      final queryParams = {
-        'orderID': orderID,
-        'rmoocID': rmoocID.toString(),
-      };
+      final queryParams = {'orderID': orderID, 'rmoocID': rmoocID.toString()};
 
       print('📤 Assigning rmooc $rmoocID to order $orderID');
 
@@ -524,13 +528,14 @@ class OrderRepository implements IOrderRepository {
       final uploadResponse = UploadImageResponse.fromJson(response);
 
       if (uploadResponse.isSuccess) {
-        print('   ✅ Image uploaded successfully: ${uploadResponse.data?.fileName}');
+        print(
+          '   ✅ Image uploaded successfully: ${uploadResponse.data?.fileName}',
+        );
       } else {
         print('   ❌ Upload failed: ${uploadResponse.message}');
       }
 
       return uploadResponse;
-
     } catch (e) {
       print('❌ Upload Single Image Error: $e');
       rethrow;
@@ -547,7 +552,9 @@ class OrderRepository implements IOrderRepository {
     final results = <UploadImageResponse>[];
 
     try {
-      print('📤 Starting batch upload: ${images.length} images for order $orderID');
+      print(
+        '📤 Starting batch upload: ${images.length} images for order $orderID',
+      );
 
       for (int i = 0; i < images.length; i++) {
         final imageData = images[i];
@@ -573,16 +580,17 @@ class OrderRepository implements IOrderRepository {
           if (uploadResponse.isSuccess) {
             onProgress?.call(i + 1, images.length);
           }
-
         } catch (e) {
           print('   ❌ Failed to upload image ${i + 1}: $e');
 
           // Add failed response
-          results.add(UploadImageResponse(
-            statusCode: 500,
-            message: 'Upload failed: ${e.toString()}',
-            data: null,
-          ));
+          results.add(
+            UploadImageResponse(
+              statusCode: 500,
+              message: 'Upload failed: ${e.toString()}',
+              data: null,
+            ),
+          );
         }
 
         // Small delay between uploads to avoid overwhelming the server
@@ -601,7 +609,6 @@ class OrderRepository implements IOrderRepository {
       }
 
       return results;
-
     } catch (e) {
       print('❌ Upload Multiple Images Error: $e');
       rethrow;

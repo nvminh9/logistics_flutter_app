@@ -1,5 +1,3 @@
-// lib/presentation/widgets/cards/operator_order_card.dart
-
 import 'package:flutter/material.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
 import 'package:nalogistics_app/core/utils/date_formatter.dart';
@@ -7,33 +5,27 @@ import 'package:nalogistics_app/core/utils/money_formatter.dart';
 import 'package:nalogistics_app/data/models/order/order_api_model.dart';
 import 'package:nalogistics_app/shared/enums/order_status_enum.dart';
 
-/// Card hiển thị nhiều thông tin hơn cho Operator
 class OperatorOrderCard extends StatelessWidget {
   final OrderApiModel order;
   final VoidCallback? onTap;
 
-  const OperatorOrderCard({
-    super.key,
-    required this.order,
-    this.onTap,
-  });
+  const OperatorOrderCard({super.key, required this.order, this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final statusColor = _getStatusColor(order.orderStatus);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _getStatusColor(order.orderStatus).withOpacity(0.2),
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: statusColor.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -41,32 +33,28 @@ class OperatorOrderCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
                 Row(
                   children: [
-                    // Status Icon
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
-                        color: _getStatusColor(order.orderStatus).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        color: statusColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
                         _getStatusIcon(order.orderStatus),
-                        color: _getStatusColor(order.orderStatus),
-                        size: 22,
+                        color: statusColor,
+                        size: 18,
                       ),
                     ),
-                    const SizedBox(width: 14),
-
-                    // Order ID và Status
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,51 +62,32 @@ class OperatorOrderCard extends StatelessWidget {
                           Text(
                             'ĐH #${order.orderID}',
                             style: const TextStyle(
-                              fontSize: 17,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: AppColors.primaryText,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           Text(
                             DateFormatter.formatDateTime(order.orderDate),
                             style: const TextStyle(
-                              fontSize: 13,
+                              fontSize: 12,
                               color: AppColors.secondaryText,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor(order.orderStatus),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              order.orderStatus.shortName.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                                letterSpacing: 0.3,
-                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-
-                    // Amount
+                    const SizedBox(width: 8),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
                           MoneyFormatter.formatSimple(order.totalCost),
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: AppColors.maritimeDarkBlue,
                           ),
@@ -126,7 +95,7 @@ class OperatorOrderCard extends StatelessWidget {
                         const Text(
                           'VND',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 10,
                             color: AppColors.secondaryText,
                           ),
                         ),
@@ -134,132 +103,53 @@ class OperatorOrderCard extends StatelessWidget {
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 16),
-                const Divider(height: 1),
-                const SizedBox(height: 16),
-
-                // ⭐ Customer Info (Operator cần xem)
-                _buildInfoRow(
-                  icon: Icons.person_outline,
-                  label: 'Khách hàng',
-                  value: order.customerName,
-                  iconColor: AppColors.maritimeBlue,
-                ),
-
-                if (order.customerPhone?.isNotEmpty == true) ...[
-                  const SizedBox(height: 12),
-                  _buildInfoRow(
-                    icon: Icons.phone_outlined,
-                    label: 'SĐT',
-                    value: order.customerPhone!,
-                    iconColor: AppColors.oceanTeal,
-                  ),
-                ],
-
-                if (order.customerAddress?.isNotEmpty == true) ...[
-                  const SizedBox(height: 12),
-                  _buildInfoRow(
-                    icon: Icons.location_on_outlined,
-                    label: 'Địa chỉ',
-                    value: order.customerAddress!,
-                    iconColor: AppColors.statusInTransit,
-                    maxLines: 2,
-                  ),
-                ],
-
-                const SizedBox(height: 16),
-
-                // Action button
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.maritimeBlue,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'XEM CHI TIẾT',
-                        style: TextStyle(
-                          fontSize: 13,
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        order.orderStatus.shortName.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 9,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
-                          letterSpacing: 0.5,
+                          letterSpacing: 0.3,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.arrow_forward,
-                        size: 16,
-                        color: Colors.white,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        order.customerName,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryText,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right,
+                      size: 20,
+                      color: AppColors.secondaryText,
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildInfoRow({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color iconColor,
-    int maxLines = 1,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: iconColor,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.secondaryText,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primaryText,
-                ),
-                maxLines: maxLines,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 

@@ -53,6 +53,38 @@ class AttachmentPickerService {
     return file.path;
   }
 
+  Future<String> saveBytesToFile({
+    required Uint8List bytes,
+    required String fileName,
+  }) async {
+    try {
+      final savedPath = await _channel
+          .invokeMethod<String>('saveBytesToDownloads', {
+            'bytes': bytes,
+            'fileName': _sanitizeFileName(
+              fileName.isEmpty ? 'attachment' : fileName,
+            ),
+          });
+
+      if (savedPath != null && savedPath.isNotEmpty) {
+        return savedPath;
+      }
+    } on MissingPluginException {
+      // Desktop/web fallback keeps the file in the app-accessible directory.
+    }
+
+    final directory =
+        await getExternalStorageDirectory() ??
+        await getApplicationDocumentsDirectory();
+    final safeName = _sanitizeFileName(
+      fileName.isEmpty ? 'attachment' : fileName,
+    );
+    final file = File('${directory.path}/$safeName');
+
+    await file.writeAsBytes(bytes, flush: true);
+    return file.path;
+  }
+
   String _sanitizeFileName(String fileName) {
     return fileName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
   }

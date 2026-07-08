@@ -6,6 +6,7 @@ import 'package:nalogistics_app/data/models/order/order_detail_api_model.dart';
 import 'package:nalogistics_app/data/models/order/pending_image_model.dart';
 import 'package:nalogistics_app/data/repositories/implementations/auth_repository.dart';
 import 'package:nalogistics_app/data/repositories/implementations/order_repository.dart';
+import 'package:nalogistics_app/data/services/media/attachment_picker_service.dart';
 import 'package:nalogistics_app/domain/usecases/order/get_order_detail_usecase.dart';
 import 'package:nalogistics_app/domain/usecases/order/update_order_status_usecase.dart';
 import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
@@ -19,12 +20,14 @@ class OrderDetailController extends BaseController {
 
   OrderDetailModel? _orderDetail;
   bool _isUpdatingStatus = false;
+  bool _isDownloadingDispatchPdf = false;
   String? _currentOrderID; // Track current order ID
   bool _driverSeenSent = false;
 
   // Getters
   OrderDetailModel? get orderDetail => _orderDetail;
   bool get isUpdatingStatus => _isUpdatingStatus;
+  bool get isDownloadingDispatchPdf => _isDownloadingDispatchPdf;
 
   OrderDetailController() {
     _orderRepository = OrderRepository();
@@ -144,6 +147,38 @@ class OrderDetailController extends BaseController {
       await _orderRepository.updateDriverSeenAt(orderID: _currentOrderID!);
     } catch (e) {
       print('❌ DriverSeenAt update failed: $e');
+    }
+  }
+
+  Future<String?> downloadDispatchOrderPdf() async {
+    final orderID = _currentOrderID ?? _orderDetail?.orderID.toString();
+    if (orderID == null || orderID.isEmpty) {
+      setError('Không có thông tin đơn hàng');
+      return null;
+    }
+
+    try {
+      _isDownloadingDispatchPdf = true;
+      clearError();
+      notifyListeners();
+
+      final bytes = await _orderRepository.downloadDispatchOrderPdf(
+        orderID: orderID,
+      );
+      final savedPath = await AttachmentPickerService().saveBytesToFile(
+        bytes: bytes,
+        fileName: 'lenh-dieu-dong-$orderID.pdf',
+      );
+
+      _isDownloadingDispatchPdf = false;
+      notifyListeners();
+      return savedPath;
+    } catch (e) {
+      print('❌ Download Dispatch Order PDF Error: $e');
+      setError('Không thể tải lệnh điều động: ${e.toString()}');
+      _isDownloadingDispatchPdf = false;
+      notifyListeners();
+      return null;
     }
   }
 

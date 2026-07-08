@@ -669,6 +669,25 @@ class _OrderDetailPageState extends State<OrderDetailPage>
     }
   }
 
+  Future<void> _downloadDispatchOrderPdf() async {
+    final controller = context.read<OrderDetailController>();
+    final savedPath = await controller.downloadDispatchOrderPdf();
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          savedPath == null
+              ? controller.errorMessage ?? 'Không thể tải lệnh điều động'
+              : 'Đã tải "lệnh điều động" về: $savedPath',
+        ),
+        backgroundColor: savedPath == null
+            ? AppColors.statusError
+            : AppColors.statusDelivered,
+      ),
+    );
+  }
+
   Widget _buildOrderHeader(dynamic order) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1287,6 +1306,7 @@ class _OrderDetailPageState extends State<OrderDetailPage>
   }
 
   Widget _buildActionButtons(dynamic order) {
+    final controller = context.watch<OrderDetailController>();
     // Xác định next status dựa trên current status
     OrderStatus? nextStatus;
     String buttonText = '';
@@ -1317,7 +1337,7 @@ class _OrderDetailPageState extends State<OrderDetailPage>
 
     // Nếu đơn hàng đã giao thì không hiện nút xác nhận nữa
     if (nextStatus == OrderStatus.completed) {
-      return Container();
+      return _buildDispatchOrderPdfButton(controller);
     }
 
     if (nextStatus == null) {
@@ -1361,6 +1381,8 @@ class _OrderDetailPageState extends State<OrderDetailPage>
 
     return Column(
       children: [
+        _buildDispatchOrderPdfButton(controller),
+        const SizedBox(height: 12),
         CustomButton(
           text: buttonText,
           onPressed: () => _updateOrderStatus(nextStatus!),
@@ -1388,6 +1410,20 @@ class _OrderDetailPageState extends State<OrderDetailPage>
         //     ),
         //   ),
       ],
+    );
+  }
+
+  Widget _buildDispatchOrderPdfButton(OrderDetailController controller) {
+    return CustomButton(
+      text: 'Xuất lệnh điều động (PDF)',
+      onPressed: controller.isDownloadingDispatchPdf
+          ? null
+          : _downloadDispatchOrderPdf,
+      isFullWidth: true,
+      isLoading: controller.isDownloadingDispatchPdf,
+      icon: Icons.picture_as_pdf,
+      backgroundColor: AppColors.statusError,
+      height: 56,
     );
   }
 

@@ -678,6 +678,13 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
               _buildImagesCard(order),
             ],
 
+            const SizedBox(height: 16),
+            Consumer<OperatorOrderDetailController>(
+              builder: (context, controller, child) {
+                return _buildDispatchOrderPdfButton(controller);
+              },
+            ),
+
             const SizedBox(height: 80), // Space for FAB
           ],
         ),
@@ -2102,6 +2109,24 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
     }
   }
 
+  Future<void> _downloadDispatchOrderPdf() async {
+    final savedPath = await _controller.downloadDispatchOrderPdf();
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          savedPath == null
+              ? _controller.errorMessage ?? 'Không thể tải lệnh điều động'
+              : 'Đã tải "lệnh điều động" về: $savedPath',
+        ),
+        backgroundColor: savedPath == null
+            ? AppColors.statusError
+            : AppColors.statusDelivered,
+      ),
+    );
+  }
+
   void _openImageGallery(List<OrderImageModel> images, int initialIndex) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -2114,6 +2139,10 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
   // Add this widget to OperatorOrderDetailPage
 
   Widget _buildUpdateButton(OperatorOrderDetailController controller) {
+    if (controller.orderDetail == null) {
+      return const SizedBox.shrink();
+    }
+
     final hasChanges = controller.hasUnsavedChanges;
     final isUpdating = controller.isUpdatingOrder;
 
@@ -2208,6 +2237,46 @@ class _OperatorOrderDetailPageState extends State<OperatorOrderDetailPage> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDispatchOrderPdfButton(
+    OperatorOrderDetailController controller,
+  ) {
+    final isDownloading = controller.isDownloadingDispatchPdf;
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: isDownloading ? null : _downloadDispatchOrderPdf,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.statusError,
+          disabledBackgroundColor: AppColors.hintText,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 2,
+        ),
+        icon: isDownloading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Icon(Icons.picture_as_pdf, size: 20, color: Colors.white),
+        label: Text(
+          isDownloading ? 'Đang xuất PDF...' : 'Xuất lệnh điều động (PDF)',
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
         ),
       ),
     );

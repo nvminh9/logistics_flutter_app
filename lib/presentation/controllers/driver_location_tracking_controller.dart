@@ -108,6 +108,8 @@ class DriverLocationTrackingController extends ChangeNotifier {
       await _trackingRepository.updateDriverLocation(
         latitude: position.latitude,
         longitude: position.longitude,
+        speed: position.speed,
+        accuracy: position.accuracy,
       );
 
       _lastLatitude = position.latitude;

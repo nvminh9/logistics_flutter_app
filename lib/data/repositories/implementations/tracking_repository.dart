@@ -7,10 +7,17 @@ class TrackingRepository {
   Future<void> updateDriverLocation({
     required double latitude,
     required double longitude,
+    required double speed,
+    required double accuracy,
   }) async {
     await _apiClient.post(
       ApiConstants.trackingLocation,
-      body: {'lattitude': latitude, 'longitude': longitude},
+      body: {
+        'lattitude': latitude,
+        'longitude': longitude,
+        'speed': speed,
+        'accuracy': accuracy,
+      },
       requiresAuth: true,
     );
   }

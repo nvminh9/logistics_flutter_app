@@ -487,11 +487,13 @@ class _ProfilePageState extends State<ProfilePage>
         final isTracking = trackingController.isTracking;
         final color = isTracking
             ? AppColors.statusDelivered
-            : trackingController.permissionDenied
+            : trackingController.needsLocationAction
             ? AppColors.statusError
             : AppColors.secondaryText;
         final icon = isTracking
             ? Icons.gps_fixed_rounded
+            : trackingController.locationServiceDisabled
+            ? Icons.location_searching_rounded
             : trackingController.permissionDenied
             ? Icons.location_disabled_rounded
             : Icons.gps_off_rounded;

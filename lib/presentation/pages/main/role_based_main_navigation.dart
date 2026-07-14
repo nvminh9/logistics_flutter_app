@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:nalogistics_app/core/constants/strings.dart';
 import 'package:nalogistics_app/core/constants/colors.dart';
 import 'package:nalogistics_app/presentation/controllers/auth_controller.dart';
+import 'package:nalogistics_app/presentation/controllers/driver_location_tracking_controller.dart';
 import 'package:nalogistics_app/presentation/controllers/order_controller.dart';
 import 'package:nalogistics_app/presentation/pages/home/home_page.dart';
 import 'package:nalogistics_app/presentation/pages/orders/order_list_with_tabs_page.dart';
@@ -15,11 +16,13 @@ class RoleBasedMainNavigation extends StatefulWidget {
   const RoleBasedMainNavigation({super.key});
 
   @override
-  State<RoleBasedMainNavigation> createState() => _RoleBasedMainNavigationState();
+  State<RoleBasedMainNavigation> createState() =>
+      _RoleBasedMainNavigationState();
 }
 
 class _RoleBasedMainNavigationState extends State<RoleBasedMainNavigation> {
   int _currentIndex = 0;
+  bool _locationPermissionPromptShown = false;
 
   // ⭐ Pages cho Driver
   final List<Widget> _driverPages = [
@@ -40,14 +43,72 @@ class _RoleBasedMainNavigationState extends State<RoleBasedMainNavigation> {
 
     // ⭐ Set role cho OrderController khi init
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authController = Provider.of<AuthController>(context, listen: false);
-      final orderController = Provider.of<OrderController>(context, listen: false);
+      final authController = Provider.of<AuthController>(
+        context,
+        listen: false,
+      );
+      final orderController = Provider.of<OrderController>(
+        context,
+        listen: false,
+      );
+      final trackingController = Provider.of<DriverLocationTrackingController>(
+        context,
+        listen: false,
+      );
 
       // Set role cho OrderController
       orderController.setUserRole(authController.userRole);
+      _requestLocationPermissionOnEntry(authController, trackingController);
 
-      print('🔧 Main Navigation: Role set to ${authController.userRole.displayName}');
+      print(
+        '🔧 Main Navigation: Role set to ${authController.userRole.displayName}',
+      );
     });
+  }
+
+  Future<void> _requestLocationPermissionOnEntry(
+    AuthController authController,
+    DriverLocationTrackingController trackingController,
+  ) async {
+    if (!authController.isDriver || _locationPermissionPromptShown) return;
+
+    _locationPermissionPromptShown = true;
+    final granted = await trackingController.requestLocationPermission();
+    if (!mounted || granted) return;
+
+    await _showLocationPermissionDialog(trackingController);
+  }
+
+  Future<void> _showLocationPermissionDialog(
+    DriverLocationTrackingController trackingController,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Cần quyền Vị trí'),
+        content: const Text(
+          'Ứng dụng cần quyền Vị trí để cập nhật hành trình giao hàng của tài xế.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Bỏ qua'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              final granted = await trackingController
+                  .requestLocationPermission();
+              if (!granted) {
+                await trackingController.openAppLocationSettings();
+              }
+            },
+            child: const Text('Cấp quyền'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -65,10 +126,7 @@ class _RoleBasedMainNavigationState extends State<RoleBasedMainNavigation> {
         }
 
         return Scaffold(
-          body: IndexedStack(
-            index: _currentIndex,
-            children: pages,
-          ),
+          body: IndexedStack(index: _currentIndex, children: pages),
           bottomNavigationBar: Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -82,7 +140,10 @@ class _RoleBasedMainNavigationState extends State<RoleBasedMainNavigation> {
             ),
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: _buildNavItems(userRole),

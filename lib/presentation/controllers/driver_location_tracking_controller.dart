@@ -15,6 +15,7 @@ class DriverLocationTrackingController extends ChangeNotifier {
   bool _isTracking = false;
   bool _isSending = false;
   bool _permissionDenied = false;
+  bool _locationServiceDisabled = false;
   String? _activeOrderId;
   String? _lastError;
   DateTime? _lastSentAt;
@@ -24,6 +25,7 @@ class DriverLocationTrackingController extends ChangeNotifier {
   bool get isTracking => _isTracking;
   bool get isSending => _isSending;
   bool get permissionDenied => _permissionDenied;
+  bool get locationServiceDisabled => _locationServiceDisabled;
   String? get activeOrderId => _activeOrderId;
   String? get lastError => _lastError;
   DateTime? get lastSentAt => _lastSentAt;
@@ -31,10 +33,13 @@ class DriverLocationTrackingController extends ChangeNotifier {
   double? get lastLongitude => _lastLongitude;
 
   String get statusText {
+    if (_locationServiceDisabled) return 'Dịch vụ định vị đang tắt';
     if (_isTracking) return 'Đang theo dõi hành trình';
     if (_permissionDenied) return 'Chưa cấp quyền định vị';
     return 'Không theo dõi hành trình';
   }
+
+  bool get needsLocationAction => _permissionDenied || _locationServiceDisabled;
 
   Future<void> syncWithOrders({
     required bool isDriver,
@@ -98,9 +103,7 @@ class DriverLocationTrackingController extends ChangeNotifier {
       _lastError = null;
       notifyListeners();
 
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
+      final position = await _getBestAvailablePosition();
 
       await _trackingRepository.updateDriverLocation(
         latitude: position.latitude,
@@ -112,6 +115,7 @@ class DriverLocationTrackingController extends ChangeNotifier {
       _lastSentAt = DateTime.now();
     } catch (e) {
       _lastError = e.toString();
+      await _refreshLocationReadinessState();
       print('Driver location tracking failed: $e');
     } finally {
       _isSending = false;
@@ -120,12 +124,21 @@ class DriverLocationTrackingController extends ChangeNotifier {
   }
 
   Future<bool> _ensureLocationPermission() async {
+    final hasPermission = await requestLocationPermission();
+    if (!hasPermission) return false;
+
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       _lastError = 'Dịch vụ định vị chưa được bật';
+      _locationServiceDisabled = true;
       return false;
     }
 
+    _locationServiceDisabled = false;
+    return true;
+  }
+
+  Future<bool> requestLocationPermission() async {
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -135,10 +148,44 @@ class DriverLocationTrackingController extends ChangeNotifier {
         permission == LocationPermission.deniedForever) {
       _permissionDenied = true;
       _lastError = 'Ứng dụng chưa được cấp quyền định vị';
+      notifyListeners();
       return false;
     }
 
+    _permissionDenied = false;
+    notifyListeners();
     return true;
+  }
+
+  Future<void> openAppLocationSettings() async {
+    await Geolocator.openAppSettings();
+  }
+
+  Future<void> openDeviceLocationSettings() async {
+    await Geolocator.openLocationSettings();
+  }
+
+  Future<Position> _getBestAvailablePosition() async {
+    try {
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+    } on TimeoutException {
+      final lastKnownPosition = await Geolocator.getLastKnownPosition();
+      if (lastKnownPosition != null) {
+        return lastKnownPosition;
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _refreshLocationReadinessState() async {
+    final permission = await Geolocator.checkPermission();
+    _permissionDenied =
+        permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever;
+    _locationServiceDisabled = !await Geolocator.isLocationServiceEnabled();
   }
 
   OrderApiModel? _findActiveTrackingOrder(

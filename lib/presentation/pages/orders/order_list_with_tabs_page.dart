@@ -28,6 +28,7 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
 
   final TextEditingController _searchController = TextEditingController();
   bool _isSearchBarVisible = false;
+  bool _locationIssueDialogShown = false;
 
   @override
   void initState() {
@@ -116,9 +117,63 @@ class _OrderListWithTabsPageState extends State<OrderListWithTabsPage>
     if (!mounted) return;
     if (_orderController.isSearching || _orderController.hasDateFilter) return;
 
-    await context.read<DriverLocationTrackingController>().syncWithOrders(
+    final trackingController = context.read<DriverLocationTrackingController>();
+    await trackingController.syncWithOrders(
       isDriver: _authController.isDriver,
       ordersByStatus: _orderController.ordersByStatus,
+    );
+
+    if (!mounted ||
+        !trackingController.needsLocationAction ||
+        _locationIssueDialogShown) {
+      return;
+    }
+
+    _locationIssueDialogShown = true;
+    await _showLocationIssueDialog(trackingController);
+    _locationIssueDialogShown = false;
+  }
+
+  Future<void> _showLocationIssueDialog(
+    DriverLocationTrackingController trackingController,
+  ) async {
+    final isServiceDisabled = trackingController.locationServiceDisabled;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          isServiceDisabled ? 'Bật dịch vụ Vị trí' : 'Cần quyền Vị trí',
+        ),
+        content: Text(
+          isServiceDisabled
+              ? 'Thiết bị đang tắt dịch vụ Vị trí. Vui lòng bật Vị trí để cập nhật hành trình.'
+              : 'Ứng dụng chưa được cấp quyền Vị trí nên không thể cập nhật hành trình giao hàng.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Bỏ qua'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              if (isServiceDisabled) {
+                await trackingController.openDeviceLocationSettings();
+                return;
+              }
+
+              final granted = await trackingController
+                  .requestLocationPermission();
+              if (!granted) {
+                await trackingController.openAppLocationSettings();
+              }
+            },
+            child: Text(isServiceDisabled ? 'Bật vị trí' : 'Cấp quyền'),
+          ),
+        ],
+      ),
     );
   }
 
